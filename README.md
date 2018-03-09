@@ -1,4 +1,4 @@
-# sentry-go
+# sentry-go [![Build Status](https://travis-ci.org/SierraSoftworks/sentry-go.svg?branch=master)](https://travis-ci.org/SierraSoftworks/sentry-go) [![](https://godoc.org/github.com/SierraSoftworks/sentry-go?status.svg)](http://godoc.org/github.com/SierraSoftworks/sentry-go)
 **A robust Sentry client for Go applications**
 
 This library is a re-imagining of how Go applications should interact
