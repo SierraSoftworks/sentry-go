@@ -1,0 +1,94 @@
+package sentry
+
+import (
+	"fmt"
+	"net/url"
+	"path"
+	"strings"
+
+	"github.com/pkg/errors"
+)
+
+var (
+	// ErrBadURL is returned when a DSN cannot be parsed due to
+	// formatting errors in its URL
+	ErrBadURL = fmt.Errorf("sentry: bad DSN URL")
+
+	// ErrMissingPublicKey is returned when a DSN does not have
+	// a valid public key contained within its URL
+	ErrMissingPublicKey = fmt.Errorf("sentry: missing public key")
+
+	// ErrMissingPrivateKey is returned when a DSN does not have
+	// a valid private key contained within its URL
+	ErrMissingPrivateKey = fmt.Errorf("sentry: missing private key")
+
+	// ErrMissingProjectID is returned when a DSN does not have a valid
+	// project ID contained within its URL
+	ErrMissingProjectID = fmt.Errorf("sentry: missing project ID")
+)
+
+type dsn struct {
+	URL        string
+	PublicKey  string
+	PrivateKey string
+	ProjectID  string
+}
+
+func newDSN(url string) (*dsn, error) {
+	d := &dsn{}
+	if err := d.Parse(url); err != nil {
+		return nil, err
+	}
+
+	return d, nil
+}
+
+func (d *dsn) AuthHeader() string {
+	if d.PublicKey == "" {
+		return ""
+	}
+
+	if d.PrivateKey == "" {
+		return ""
+	}
+
+	return fmt.Sprintf("Sentry sentry_version=4, sentry_key=%s, sentry_secret=%s", d.PublicKey, d.PrivateKey)
+}
+
+func (d *dsn) Parse(dsn string) error {
+	if dsn == "" {
+		return nil
+	}
+
+	uri, err := url.Parse(dsn)
+	if err != nil {
+		return errors.Wrap(err, ErrBadURL.Error())
+	}
+
+	if uri.User == nil {
+		return errors.Wrap(fmt.Errorf("missing URL user"), ErrMissingPublicKey.Error())
+	}
+
+	d.PublicKey = uri.User.Username()
+
+	privateKey, ok := uri.User.Password()
+	if !ok {
+		return errors.Wrap(fmt.Errorf("missing URL password"), ErrMissingPrivateKey.Error())
+	}
+	d.PrivateKey = privateKey
+
+	uri.User = nil
+
+	if idx := strings.LastIndex(uri.Path, "/"); idx != -1 {
+		d.ProjectID = uri.Path[idx+1:]
+		uri.Path = path.Join(uri.Path[:idx+1], "api", d.ProjectID, "store")
+	}
+
+	if d.ProjectID == "" {
+		return errors.Wrap(fmt.Errorf("missing Project ID"), ErrMissingProjectID.Error())
+	}
+
+	d.URL = uri.String()
+
+	return nil
+}
