@@ -1,34 +1,40 @@
 package sentry
 
 import (
-	"log"
 	"net/http"
+	"os"
 )
 
 func ExampleHTTPRequest() {
-	cl := NewClient().With(
-		DSN("https://demo.getsentry.io/"),
+	cl := NewClient(
 		Release("v1.0.0"),
-		Environment("production"),
 	)
 
 	http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
-		event, _ := NewEventID()
-		res.Header().Set("X-Sentry-ID", event)
+		cl := cl.With(
+			HTTPRequest(req).WithHeaders(),
+		)
+
+		res.Header().Set("Content-Type", "application/json")
 		res.WriteHeader(404)
-		res.Write([]byte("This method is not implemented yet"))
+		res.Write([]byte(`{"error":"Not Found","message":"We could not find the route you requested, please check your URL and try again."}`))
 
 		cl.Capture(
-			EventID(event),
-			Message("Not Implemented"),
+			Message("Route Not Found: [%s] %s", req.Method, req.URL.Path),
 			Level(Warning),
-			HTTPRequest(req).WithCookies().WithHeaders(),
-			StackTrace().WithInternalPrefixes("github.com/SierraSoftworks/sentry-go"),
 		)
 	})
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
-		log.Fatal(err)
+		cl.Capture(
+			ExceptionForError(err),
+			Level(Fatal),
+			Extra(map[string]interface{}{
+				"port": 8080,
+			}),
+		)
+
+		os.Exit(1)
 	}
 
 	//Output:

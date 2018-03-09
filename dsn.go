@@ -3,11 +3,26 @@ package sentry
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 
 	"github.com/pkg/errors"
 )
+
+func init() {
+	addDefaultOptionProvider(func() Option {
+		return DSN(os.Getenv("SENTRY_DSN"))
+	})
+}
+
+// DSN lets you specify the unique Sentry DSN used to submit events for
+// your application. Specifying an empty DSN will disable the client.
+func DSN(dsn string) Option {
+	return &configOption{
+		dsn: &dsn,
+	}
+}
 
 var (
 	// ErrBadURL is returned when a DSN cannot be parsed due to

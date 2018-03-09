@@ -5,12 +5,12 @@ import "encoding/json"
 // Extra allows you to provide additional arbitrary metadata with your
 // event. This data is not searchable, but can be invaluable in identifying
 // the cause of a problem.
-func Extra(extra map[string]string) Option {
+func Extra(extra map[string]interface{}) Option {
 	return &extraOption{extra}
 }
 
 type extraOption struct {
-	extra map[string]string
+	extra map[string]interface{}
 }
 
 func (o *extraOption) Class() string {
@@ -19,7 +19,7 @@ func (o *extraOption) Class() string {
 
 func (o *extraOption) Merge(other Option) Option {
 	if ot, ok := other.(*extraOption); ok {
-		extra := make(map[string]string, len(o.extra))
+		extra := make(map[string]interface{}, len(o.extra))
 		for k, v := range o.extra {
 			extra[k] = v
 		}

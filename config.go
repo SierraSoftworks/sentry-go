@@ -1,25 +1,16 @@
 package sentry
 
-import (
-	"os"
-)
-
-func init() {
-	addDefaultOptionProvider(func() Option {
-		return DSN(os.Getenv("SENTRY_DSN"))
-	})
-}
-
-// DSN lets you specify the unique Sentry DSN used to submit events for
-// your application. Specifying an empty DSN will disable the client.
-func DSN(dsn string) Option {
-	return &configOption{
-		dsn: &dsn,
-	}
+// A Config allows you to control how events are sent to Sentry.
+// It is usually populated through the standard build pipeline
+// through the DSN() and UseTransport() options.
+type Config interface {
+	DSN() string
+	Transport() Transport
 }
 
 type configOption struct {
-	dsn *string
+	dsn       *string
+	transport Transport
 }
 
 func (o *configOption) Class() string {
@@ -32,7 +23,8 @@ func (o *configOption) Ommit() bool {
 
 func (o *configOption) Clone() *configOption {
 	return &configOption{
-		dsn: o.dsn,
+		dsn:       o.dsn,
+		transport: o.transport,
 	}
 }
 
@@ -42,6 +34,10 @@ func (o *configOption) Merge(old Option) Option {
 
 		if o.dsn != nil {
 			c.dsn = o.dsn
+		}
+
+		if o.transport != nil {
+			c.transport = o.transport
 		}
 
 		return c
@@ -56,4 +52,8 @@ func (o *configOption) DSN() string {
 	}
 
 	return *o.dsn
+}
+
+func (o *configOption) Transport() Transport {
+	return o.transport
 }

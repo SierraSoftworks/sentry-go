@@ -25,8 +25,13 @@ type HTTPRequestOption interface {
 // sanitized.
 func HTTPRequest(req *http.Request) HTTPRequestOption {
 	return &httpRequestOption{
-		request:  req,
-		sanitize: []string{},
+		request: req,
+		sanitize: []string{
+			"password",
+			"passwd",
+			"passphrase",
+			"secret",
+		},
 	}
 }
 
@@ -68,6 +73,10 @@ func (h *httpRequestOption) Sanitize(fields ...string) HTTPRequestOption {
 	return h
 }
 
+func (h *httpRequestOption) Ommit() bool {
+	return h.request == nil
+}
+
 func (h *httpRequestOption) MarshalJSON() ([]byte, error) {
 	return json.Marshal(h.buildData())
 }
@@ -82,6 +91,7 @@ func (h *httpRequestOption) buildData() *HTTPOption {
 		Query:   sanitizeQuery(h.request.URL.Query(), h.sanitize).Encode(),
 		URL:     proto + "://" + h.request.Host + h.request.URL.Path,
 		Headers: make(map[string]string, 0),
+		Env:     make(map[string]string, 0),
 		Data:    h.data,
 	}
 

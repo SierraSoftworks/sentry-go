@@ -24,8 +24,9 @@ In addition to the features listed above, the library offers support for a numbe
 of more advanced use cases, including sending events to multiple different Sentry
 DSNs, derived client contexts, custom interface types and custom transports.
 
-## Example
+## Examples
 
+### Breadcrumbs and Exceptions
 ```go
 package main
 
@@ -54,9 +55,83 @@ func main() {
 }
 ```
 
+### HTTP Request Context
+```go
+package main
+
+import (
+    "net/http"
+    "os"
+    
+    "github.com/SierraSoftworks/sentry-go"
+)
+
+func main() {
+    cl := sentry.NewClient(
+        sentry.Release("v1.0.0"),
+    )
+
+    http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
+        cl := cl.With(
+            sentry.HTTPRequest(req).WithHeaders(),
+        )
+
+        res.Header().Set("Content-Type", "application/json")
+        res.WriteHeader(404)
+        res.Write([]byte(`{"error":"Not Found","message":"We could not find the route you requested, please check your URL and try again."}`))
+
+        cl.Capture(
+            sentry.Message("Route Not Found: [%s] %s", req.Method, req.URL.Path),
+            sentry.Level(sentry.Warning),
+        )
+    })
+
+    if err := http.ListenAndServe(":8080", nil); err != nil {
+        cl.Capture(
+            sentry.ExceptionForError(err),
+            sentry.Level(sentry.Fatal),
+            sentry.Extra(map[string]interface{}{
+                "port": 8080,
+            }),
+        )
+
+        os.Exit(1)
+    }
+}
+```
+
 ## Advanced Use Cases
 
-### Custom Sentry Interface Type
+### Custom SendQueues
+The default send queue provided by this library is a serial, buffered, queue
+which waits for a request to complete before sending the next. This works well
+to limit the potential for clients DoSing your Sentry server, but might not
+be what you want.
+
+For situations where you'd prefer to use a different type of queue algorithm,
+this library allows you to change the queue implementation both globally and
+on a per-client basis. You may also opt to use multiple send queues spread
+between different clients to impose custom behaviour for different portions
+of your application.
+
+```go
+import "github.com/SierraSoftworks/sentry-go"
+
+func main() {
+    sentry.SetDefaultSendQueue(sentry.NewSequentialSendQueue(10))
+
+    cl := sentry.NewClient()
+    cl.Capture(sentry.Message("Sent over the global queue"))
+
+    cl2 := sentry.NewClient().UseSendQueue(sentry.NewSequentialSendQueue(100))
+    cl2.Capture(sentry.Message("Sent over the client's queue"))
+}
+```
+
+SendQueue implementations must implement the `SendQueue` interface, which
+requires it to provide both the `Enqueue` and `Shutdown` methods.
+
+### Custom Sentry Interface Types
 Sometimes you'll want to take advantage of a Sentry processor which isn't
 yet supported by this library. This library makes implementing your own
 options trivially easy, not only allowing you to add those new interfaces,
