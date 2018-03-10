@@ -28,7 +28,10 @@ func (t *httpTransport) Send(dsn string, packet Packet) error {
 		return nil
 	}
 
-	url, authHeader := t.parseDSN(dsn)
+	url, authHeader, err := t.parseDSN(dsn)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse DSN")
+	}
 
 	body, contentType, err := t.serializePacket(packet)
 	if err != nil {
@@ -59,14 +62,13 @@ func (t *httpTransport) Send(dsn string, packet Packet) error {
 	return nil
 }
 
-func (t *httpTransport) parseDSN(dsn string) (url, authHeader string) {
+func (t *httpTransport) parseDSN(dsn string) (url, authHeader string, err error) {
 	d, err := newDSN(dsn)
 	if err != nil {
-		// TODO: Indicate that this is an invalid DSN to the user
-		return
+		return "", "", err
 	}
 
-	return d.URL, d.AuthHeader()
+	return d.URL, d.AuthHeader(), nil
 }
 
 func (t *httpTransport) serializePacket(packet Packet) (io.Reader, string, error) {

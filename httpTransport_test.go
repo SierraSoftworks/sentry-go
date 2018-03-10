@@ -142,13 +142,22 @@ func TestHTTPTransport(t *testing.T) {
 
 		Convey("parseDSN()", func() {
 			Convey("With an empty DSN", func() {
-				url, authheader := ht.parseDSN("")
+				url, authheader, err := ht.parseDSN("")
+				So(err, ShouldBeNil)
+				So(url, ShouldEqual, "")
+				So(authheader, ShouldEqual, "")
+			})
+
+			Convey("With an invalid DSN", func() {
+				url, authheader, err := ht.parseDSN("@")
+				So(err, ShouldNotBeNil)
 				So(url, ShouldEqual, "")
 				So(authheader, ShouldEqual, "")
 			})
 
 			Convey("With a valid DSN", func() {
-				url, authHeader := ht.parseDSN("https://user:pass@example.com/sentry/1")
+				url, authHeader, err := ht.parseDSN("https://user:pass@example.com/sentry/1")
+				So(err, ShouldBeNil)
 				So(url, ShouldEqual, "https://example.com/sentry/api/1/store")
 				So(authHeader, ShouldEqual, "Sentry sentry_version=4, sentry_key=user, sentry_secret=pass")
 			})
