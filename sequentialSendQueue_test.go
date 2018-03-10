@@ -43,7 +43,7 @@ func TestSequentialSendQueue(t *testing.T) {
 				select {
 				case p2 := <-transport.ch:
 					So(p2, ShouldEqual, p)
-				case <-time.After(10 * time.Millisecond):
+				case <-time.After(100 * time.Millisecond):
 					So(fmt.Errorf("timeout"), ShouldBeNil)
 				}
 
@@ -51,7 +51,7 @@ func TestSequentialSendQueue(t *testing.T) {
 				case err, ok := <-e.WaitChannel():
 					So(err, ShouldBeNil)
 					So(ok, ShouldBeFalse)
-				case <-time.After(10 * time.Millisecond):
+				case <-time.After(100 * time.Millisecond):
 					So(fmt.Errorf("timeout"), ShouldBeNil)
 				}
 			})
@@ -75,7 +75,7 @@ func TestSequentialSendQueue(t *testing.T) {
 				select {
 				case <-transport.ch:
 					So(e1.Error(), ShouldBeNil)
-				case <-time.After(10 * time.Millisecond):
+				case <-time.After(100 * time.Millisecond):
 					So(fmt.Errorf("timeout"), ShouldBeNil)
 				}
 
