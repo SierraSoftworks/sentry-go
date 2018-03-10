@@ -96,7 +96,7 @@ func (d *dsn) Parse(dsn string) error {
 
 	if idx := strings.LastIndex(uri.Path, "/"); idx != -1 {
 		d.ProjectID = uri.Path[idx+1:]
-		uri.Path = path.Join(uri.Path[:idx+1], "api", d.ProjectID, "store")
+		uri.Path = fmt.Sprintf("%s/", path.Join(uri.Path[:idx+1], "api", d.ProjectID, "store"))
 	}
 
 	if d.ProjectID == "" {

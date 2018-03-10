@@ -9,9 +9,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
+	log "github.com/Sirupsen/logrus"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -73,7 +75,7 @@ func TestHTTPTransport(t *testing.T) {
 				res.Write([]byte("No data"))
 
 				c.So(req.Method, ShouldEqual, "POST")
-				c.So(req.RequestURI, ShouldEqual, "/api/1/store")
+				c.So(req.RequestURI, ShouldEqual, "/api/1/store/")
 				c.So(req.Header.Get("X-Sentry-Auth"), ShouldEqual, "Sentry sentry_version=4, sentry_key=user, sentry_secret=pass")
 
 				expectedData, err := testSerializePacket(p)
@@ -158,9 +160,26 @@ func TestHTTPTransport(t *testing.T) {
 			Convey("With a valid DSN", func() {
 				url, authHeader, err := ht.parseDSN("https://user:pass@example.com/sentry/1")
 				So(err, ShouldBeNil)
-				So(url, ShouldEqual, "https://example.com/sentry/api/1/store")
+				So(url, ShouldEqual, "https://example.com/sentry/api/1/store/")
 				So(authHeader, ShouldEqual, "Sentry sentry_version=4, sentry_key=user, sentry_secret=pass")
 			})
 		})
+
+		// If you set $SENTRY_DSN you can send events to a live Sentry instance
+		// to confirm that this library functions correctly.
+		if liveTestDSN := os.Getenv("SENTRY_DSN"); liveTestDSN != "" {
+			Convey("Live Test", func() {
+				log.SetLevel(log.DebugLevel)
+				defer log.SetLevel(log.InfoLevel)
+
+				p := NewPacket().SetOptions(
+					Message("Ran Live Test"),
+					Release(version),
+					Level(Debug),
+				)
+
+				So(t.Send(liveTestDSN, p), ShouldBeNil)
+			})
+		}
 	})
 }

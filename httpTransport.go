@@ -71,15 +71,25 @@ func (t *httpTransport) Send(dsn string, packet Packet) error {
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("User-Agent", fmt.Sprintf("sentry-go %s (Sierra Softworks; github.com/SierraSoftworks/sentry-go)", version))
 
+	log.WithFields(log.Fields{
+		"method": req.Method,
+		"url":    req.URL.String(),
+	}).Debug("sentry: Making request to send event")
+
 	res, err := t.client.Do(req)
 	if err != nil {
 		return errors.Wrap(err, "failed to submit request")
 	}
 
-	io.Copy(ioutil.Discard, res.Body)
+	resBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return errors.Wrap(err, "failed to read body")
+	}
+
 	res.Body.Close()
 
 	if res.StatusCode != 200 {
+		log.WithField("body", string(resBody)).WithField("statusCode", res.StatusCode).Debug("sentry: Request to send event failed")
 		return fmt.Errorf("got http status %d, expected 200", res.StatusCode)
 	}
 
