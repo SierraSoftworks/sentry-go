@@ -30,20 +30,22 @@ func (o *levelOption) MarshalJSON() ([]byte, error) {
 // Severity represents a Sentry event severity (ranging from debug to fatal)
 type Severity string
 
-// Fatal represents exceptions which result in the application exiting fatally
-var Fatal = Severity("fatal")
+const (
+	// Fatal represents exceptions which result in the application exiting fatally
+	Fatal = Severity("fatal")
 
-// Error represents exceptions which break the expected application flow
-var Error = Severity("error")
+	// Error represents exceptions which break the expected application flow
+	Error = Severity("error")
 
-// Warning represents events which are abnormal but do not prevent the application
-// from operating correctly
-var Warning = Severity("warning")
+	// Warning represents events which are abnormal but do not prevent the application
+	// from operating correctly
+	Warning = Severity("warning")
 
-// Info is used to expose information about events which occur during normal
-// operation of the application
-var Info = Severity("info")
+	// Info is used to expose information about events which occur during normal
+	// operation of the application
+	Info = Severity("info")
 
-// Debug is used to expose verbose information about events which occur during
-// normal operation of the application
-var Debug = Severity("debug")
+	// Debug is used to expose verbose information about events which occur during
+	// normal operation of the application
+	Debug = Severity("debug")
+)
