@@ -8,6 +8,21 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func ExamplePacket() {
+	// Create a new packet object which can be sent to
+	// Sentry by one of the transports or send queues.
+	p := NewPacket().SetOptions(
+		DSN(""),
+		Message("Custom packet creation"),
+	)
+
+	// Create a clone of this packet if you want to use
+	// it as a template
+	p.Clone().SetOptions(
+		Message("Overridden message which doesn't affect the original"),
+	)
+}
+
 func TestPacket(t *testing.T) {
 	Convey("Packet", t, func() {
 		Convey("NewPacket()", func() {

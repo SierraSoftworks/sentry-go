@@ -7,6 +7,18 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func ExampleLogger() {
+	cl := NewClient(
+		// You can set the logger when you create your client
+		Logger("root"),
+	)
+
+	cl.Capture(
+		// You can also specify it when sending an event
+		Logger("http"),
+	)
+}
+
 func TestLogger(t *testing.T) {
 	Convey("Logger", t, func() {
 		Convey("Should register itself with the default providers", func() {

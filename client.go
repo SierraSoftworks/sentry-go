@@ -37,28 +37,35 @@ func NewClient(options ...Option) Client {
 
 func (c *client) Capture(options ...Option) QueuedEvent {
 	p := NewPacket().SetOptions(c.fullDefaultOptions()...).SetOptions(options...)
-	conf := c.getConfig(options)
+	conf := c.getConfig(options...)
 
-	q := c.queue
-	if c.queue == nil {
-		q = DefaultSendQueue()
-	}
-
-	return q.Enqueue(conf, p)
+	return c.getQueue().Enqueue(conf, p)
 }
 
 func (c *client) With(options ...Option) Client {
 	return &client{
 		parent:  c,
-		options: append(c.options, options...),
+		options: options,
 
-		queue: c.queue,
+		queue: nil,
 	}
 }
 
 func (c *client) UseSendQueue(queue SendQueue) Client {
 	c.queue = queue
 	return c
+}
+
+func (c *client) getQueue() SendQueue {
+	if c.queue != nil {
+		return c.queue
+	}
+
+	if c.parent == nil {
+		return DefaultSendQueue()
+	}
+
+	return c.parent.getQueue()
 }
 
 func (c *client) fullDefaultOptions() []Option {
@@ -69,11 +76,11 @@ func (c *client) fullDefaultOptions() []Option {
 	return append(c.parent.fullDefaultOptions(), c.options...)
 }
 
-func (c *client) getConfig(options []Option) *configOption {
+func (c *client) getConfig(options ...Option) *configOption {
 	cnf := &configOption{}
 	for _, opt := range append(c.fullDefaultOptions(), options...) {
 		if oc, ok := opt.(*configOption); ok {
-			cnf = cnf.Merge(oc).(*configOption)
+			cnf = oc.Merge(cnf).(*configOption)
 		}
 	}
 

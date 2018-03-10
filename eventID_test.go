@@ -1,10 +1,32 @@
 package sentry
 
 import (
+	"log"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+func ExampleEventID() {
+	id, err := NewEventID()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	cl := NewClient()
+
+	ctxCl := cl.With(
+		// You could set the event ID for a context specific
+		// client if you wanted (but you probably shouldn't).
+		EventID(id),
+	)
+
+	ctxCl.Capture(
+		// The best place to set it is when you are ready to send
+		// an event to Sentry.
+		EventID(id),
+	)
+}
 
 func TestEventID(t *testing.T) {
 	Convey("EventID", t, func() {

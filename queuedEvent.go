@@ -27,7 +27,7 @@ type QueuedEventInternal interface {
 // information about the events that they are sending to Sentry.
 func NewQueuedEvent(cfg Config, packet Packet) QueuedEvent {
 	e := &queuedEvent{
-		conf:   cfg,
+		cfg:    cfg,
 		packet: packet,
 	}
 
@@ -37,7 +37,7 @@ func NewQueuedEvent(cfg Config, packet Packet) QueuedEvent {
 }
 
 type queuedEvent struct {
-	conf     Config
+	cfg      Config
 	packet   Packet
 	complete bool
 	err      error
@@ -89,7 +89,7 @@ func (e *queuedEvent) Packet() Packet {
 }
 
 func (e *queuedEvent) Config() Config {
-	return e.conf
+	return e.cfg
 }
 
 func (e *queuedEvent) Complete(err error) {

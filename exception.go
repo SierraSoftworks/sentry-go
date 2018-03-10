@@ -54,8 +54,9 @@ func (e *ExceptionInfo) ForError(err error) *ExceptionInfo {
 // occurred within your application as part of the event you send to Sentry.
 func ExceptionForError(err error) Option {
 	exceptions := []*ExceptionInfo{}
+
 	for err != nil {
-		exceptions = append(exceptions, NewExceptionInfo().ForError(err))
+		exceptions = append([]*ExceptionInfo{NewExceptionInfo().ForError(err)}, exceptions...)
 
 		if causer, ok := err.(interface {
 			Cause() error
@@ -67,7 +68,7 @@ func ExceptionForError(err error) Option {
 	}
 
 	return &exceptionOption{
-		values: exceptions,
+		exceptions: exceptions,
 	}
 }
 
@@ -75,26 +76,26 @@ func ExceptionForError(err error) Option {
 // within your application as part of the event you send to Sentry.
 func Exception(info *ExceptionInfo) Option {
 	return &exceptionOption{
-		values: []*ExceptionInfo{info},
+		exceptions: []*ExceptionInfo{info},
 	}
 }
 
 var errorMsgPattern = regexp.MustCompile(`\A(\w+): (.+)\z`)
 
 type exceptionOption struct {
-	values []*ExceptionInfo
+	exceptions []*ExceptionInfo
 }
 
 func (o *exceptionOption) Class() string {
 	return "exception"
 }
 
-func (o *exceptionOption) Merge(other Option) Option {
-	if oo, ok := other.(*exceptionOption); ok {
+func (o *exceptionOption) Merge(old Option) Option {
+	if old, ok := old.(*exceptionOption); ok {
 		return &exceptionOption{
-			values: append(o.values, oo.values...),
+			exceptions: append(old.exceptions, o.exceptions...),
 		}
 	}
 
-	return other
+	return o
 }

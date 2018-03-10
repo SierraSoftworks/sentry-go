@@ -1,10 +1,10 @@
 package sentry
 
-// HTTPOption is a low-level interface which describes
+// HTTPRequestInfo is a low-level interface which describes
 // the details of an HTTP request made to a web server.
 // If you are using the net/http library, the HTTPRequest()
 // option will populate this information for you automatically.
-type HTTPOption struct {
+type HTTPRequestInfo struct {
 	URL    string `json:"url"`
 	Method string `json:"method"`
 	Query  string `json:"query_string,omitempty"`
@@ -19,7 +19,7 @@ type HTTPOption struct {
 // Class is used to meet the Option interface constraints by
 // providing the name of the API field that this data will be
 // submitted in.
-func (o *HTTPOption) Class() string {
+func (o *HTTPRequestInfo) Class() string {
 	return "request"
 }
 
@@ -29,6 +29,6 @@ func (o *HTTPOption) Class() string {
 // the values sent to Sentry.
 // For all other purposes, the HTTPRequest() option is a more useful
 // replacement.
-func HTTP(h *HTTPOption) Option {
+func HTTP(h *HTTPRequestInfo) Option {
 	return h
 }

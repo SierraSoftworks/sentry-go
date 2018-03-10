@@ -5,6 +5,10 @@ import "encoding/json"
 // Tags allow you to add additional tagging information to events which
 // makes it possible to easily group and query similar events.
 func Tags(tags map[string]string) Option {
+	if tags == nil {
+		return nil
+	}
+
 	return &tagsOption{tags}
 }
 
@@ -16,21 +20,21 @@ func (o *tagsOption) Class() string {
 	return "tags"
 }
 
-func (o *tagsOption) Merge(other Option) Option {
-	if ot, ok := other.(*tagsOption); ok {
-		tags := make(map[string]string, len(o.tags))
-		for k, v := range o.tags {
+func (o *tagsOption) Merge(old Option) Option {
+	if old, ok := old.(*tagsOption); ok {
+		tags := make(map[string]string, len(old.tags))
+		for k, v := range old.tags {
 			tags[k] = v
 		}
 
-		for k, v := range ot.tags {
+		for k, v := range o.tags {
 			tags[k] = v
 		}
 
 		return &tagsOption{tags}
 	}
 
-	return other
+	return o
 }
 
 func (o *tagsOption) MarshalJSON() ([]byte, error) {

@@ -81,12 +81,12 @@ func (h *httpRequestOption) MarshalJSON() ([]byte, error) {
 	return json.Marshal(h.buildData())
 }
 
-func (h *httpRequestOption) buildData() *HTTPOption {
+func (h *httpRequestOption) buildData() *HTTPRequestInfo {
 	proto := "http"
 	if h.request.TLS != nil || h.request.Header.Get("X-Forwarded-Proto") == "https" {
 		proto = "https"
 	}
-	p := &HTTPOption{
+	p := &HTTPRequestInfo{
 		Method:  h.request.Method,
 		Query:   sanitizeQuery(h.request.URL.Query(), h.sanitize).Encode(),
 		URL:     proto + "://" + h.request.Host + h.request.URL.Path,

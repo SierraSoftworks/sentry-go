@@ -8,10 +8,12 @@ import (
 
 func ExampleCulprit() {
 	cl := NewClient(
-		DSN(""),
+		// You can set this when creating your client
+		Culprit("example"),
 	)
 
 	cl.Capture(
+		// Or you can set it when sending an event
 		Culprit("example"),
 	)
 }

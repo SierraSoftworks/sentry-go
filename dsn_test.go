@@ -47,5 +47,29 @@ func TestDSN(t *testing.T) {
 				})
 			}
 		})
+
+		Convey("AuthHeader()", func() {
+			Convey("With no public key", func() {
+				d := &dsn{
+					PrivateKey: "secret",
+				}
+				So(d.AuthHeader(), ShouldEqual, "")
+			})
+
+			Convey("With no private key", func() {
+				d := &dsn{
+					PublicKey: "key",
+				}
+				So(d.AuthHeader(), ShouldEqual, "")
+			})
+
+			Convey("With valid keys", func() {
+				d := &dsn{
+					PublicKey:  "key",
+					PrivateKey: "secret",
+				}
+				So(d.AuthHeader(), ShouldEqual, "Sentry sentry_version=4, sentry_key=key, sentry_secret=secret")
+			})
+		})
 	})
 }

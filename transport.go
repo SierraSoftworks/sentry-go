@@ -33,5 +33,9 @@ func DefaultTransport() Transport {
 // SetDefaultTransport allows you to change the transport that
 // is used by default for all new packets.
 func SetDefaultTransport(transport Transport) {
+	if transport == nil {
+		transport = newHTTPTransport()
+	}
+
 	defaultTransport = transport
 }

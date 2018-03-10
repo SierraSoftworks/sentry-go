@@ -66,8 +66,22 @@ func TestBreadcrumbs(t *testing.T) {
 			So(DefaultBreadcrumbs(), ShouldImplement, (*BreadcrumbsList)(nil))
 		})
 
+		Convey("Breadcrumbs()", func() {
+			Convey("Should use the correct Class()", func() {
+				l := NewBreadcrumbsList(3)
+				So(l, ShouldNotBeNil)
+
+				So(Breadcrumbs(l).Class(), ShouldEqual, "breadcrumbs")
+			})
+
+			Convey("Should return nil if the list is nil", func() {
+				So(Breadcrumbs(nil), ShouldBeNil)
+			})
+		})
+
 		Convey("NewBreadcrumbsList()", func() {
 			l := NewBreadcrumbsList(3)
+			So(l, ShouldNotBeNil)
 
 			ll, ok := l.(*breadcrumbsList)
 			So(ok, ShouldBeTrue)

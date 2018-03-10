@@ -7,6 +7,18 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func ExampleLevel() {
+	cl := NewClient(
+		// You can set the severity level when you create your client
+		Level(Debug),
+	)
+
+	cl.Capture(
+		// You can also specify it when sending an event
+		Level(Error),
+	)
+}
+
 func TestSeverity(t *testing.T) {
 	Convey("Severity", t, func() {
 		Convey("Level()", func() {

@@ -40,7 +40,7 @@ func (o *stackTraceOption) ForError(err error) StackTraceOption {
 }
 
 func (o *stackTraceOption) WithInternalPrefixes(prefixes ...string) StackTraceOption {
-	o.internalPrefixes = prefixes
+	o.internalPrefixes = append(o.internalPrefixes, prefixes...)
 	return o
 }
 

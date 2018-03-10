@@ -34,7 +34,7 @@ var (
 var defaultSendQueue SendQueue
 
 func init() {
-	defaultSendQueue = NewSequentialSendQueue(100)
+	SetDefaultSendQueue(nil)
 }
 
 // The DefaultSendQueue is used by all clients which have not been configured
@@ -46,5 +46,9 @@ func DefaultSendQueue() SendQueue {
 // SetDefaultSendQueue allows you to change the default queue implementation
 // used to send events to Sentry.
 func SetDefaultSendQueue(queue SendQueue) {
+	if queue == nil {
+		queue = NewSequentialSendQueue(100)
+	}
+
 	defaultSendQueue = queue
 }

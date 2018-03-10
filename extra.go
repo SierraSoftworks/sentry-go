@@ -6,6 +6,10 @@ import "encoding/json"
 // event. This data is not searchable, but can be invaluable in identifying
 // the cause of a problem.
 func Extra(extra map[string]interface{}) Option {
+	if extra == nil {
+		return nil
+	}
+
 	return &extraOption{extra}
 }
 
@@ -17,21 +21,21 @@ func (o *extraOption) Class() string {
 	return "extra"
 }
 
-func (o *extraOption) Merge(other Option) Option {
-	if ot, ok := other.(*extraOption); ok {
+func (o *extraOption) Merge(old Option) Option {
+	if old, ok := old.(*extraOption); ok {
 		extra := make(map[string]interface{}, len(o.extra))
-		for k, v := range o.extra {
+		for k, v := range old.extra {
 			extra[k] = v
 		}
 
-		for k, v := range ot.extra {
+		for k, v := range o.extra {
 			extra[k] = v
 		}
 
 		return &extraOption{extra}
 	}
 
-	return other
+	return o
 }
 
 func (o *extraOption) MarshalJSON() ([]byte, error) {

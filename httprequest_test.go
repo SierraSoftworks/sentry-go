@@ -13,8 +13,10 @@ func ExampleHTTPRequest() {
 		Release("v1.0.0"),
 	)
 
+	// Add your 404 handler to the default mux
 	http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
 		cl := cl.With(
+			// Set the HTTP request context for your request's client
 			HTTPRequest(req).WithHeaders(),
 		)
 
@@ -22,23 +24,12 @@ func ExampleHTTPRequest() {
 		res.WriteHeader(404)
 		res.Write([]byte(`{"error":"Not Found","message":"We could not find the route you requested, please check your URL and try again."}`))
 
+		// Capture the problem using your request's client
 		cl.Capture(
 			Message("Route Not Found: [%s] %s", req.Method, req.URL.Path),
 			Level(Warning),
 		)
 	})
-
-	// if err := http.ListenAndServe(":8080", nil); err != nil {
-	// 	cl.Capture(
-	// 		ExceptionForError(err),
-	// 		Level(Fatal),
-	// 		Extra(map[string]interface{}{
-	// 			"port": 8080,
-	// 		}),
-	// 	)
-
-	// 	os.Exit(1)
-	// }
 }
 
 func TestHTTPRequest(t *testing.T) {

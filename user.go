@@ -2,10 +2,10 @@ package sentry
 
 import "encoding/json"
 
-// UserOption provides the fields that may be specified to describe
+// UserInfo provides the fields that may be specified to describe
 // a unique user of your application. You should specify at least
 // an `ID` or `IPAddress`.
-type UserOption struct {
+type UserInfo struct {
 	ID        string
 	Email     string
 	IPAddress string
@@ -15,7 +15,11 @@ type UserOption struct {
 
 // User allows you to include the details of a user that was interacting
 // with your application when the error occurred.
-func User(user *UserOption) Option {
+func User(user *UserInfo) Option {
+	if user == nil {
+		return nil
+	}
+
 	o := &userOption{
 		fields: map[string]string{},
 	}

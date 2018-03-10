@@ -6,6 +6,20 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func ExampleUseTransport() {
+	var myTransport Transport
+
+	cl := NewClient(
+		// You can configure the transport to be used on a client level
+		UseTransport(myTransport),
+	)
+
+	cl.Capture(
+		// Or for a specific event when it is sent
+		UseTransport(myTransport),
+	)
+}
+
 func TestTransport(t *testing.T) {
 	Convey("Transport", t, func() {
 		Convey("UseTransport()", func() {
@@ -33,6 +47,11 @@ func TestTransport(t *testing.T) {
 				t := newHTTPTransport()
 				SetDefaultTransport(t)
 				So(DefaultTransport(), ShouldEqual, t)
+			})
+
+			Convey("Should set the transport back to the default if nil is provided", func() {
+				SetDefaultTransport(nil)
+				So(DefaultTransport(), ShouldNotBeNil)
 			})
 		})
 	})

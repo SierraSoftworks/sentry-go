@@ -73,7 +73,7 @@ func RuntimeContext(name, version string) Option {
 // by providing its key and the data to accompany it.
 // This is a low-level method and you should be familiar
 // with the correct usage of contexts before using it.
-// https://dolds.sentry.io/clientdev/interfaces/contexts/
+// https://docs.sentry.io/clientdev/interfaces/contexts/
 func Context(key string, data interface{}) Option {
 	return &contextOption{
 		contexts: map[string]interface{}{

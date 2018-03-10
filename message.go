@@ -2,13 +2,13 @@ package sentry
 
 import "fmt"
 
-type message struct {
-	Message   string
-	Params    []interface{}
-	Formatted string
+type messageOption struct {
+	Message   string        `json:"message"`
+	Params    []interface{} `json:"params,omitempty"`
+	Formatted string        `json:"formatted,omitempty"`
 }
 
-func (m *message) Class() string {
+func (m *messageOption) Class() string {
 	return "sentry.interfaces.Message"
 }
 
@@ -16,12 +16,12 @@ func (m *message) Class() string {
 // using a format string with standard fmt.Sprintf params.
 func Message(format string, params ...interface{}) Option {
 	if len(params) == 0 {
-		return &message{
+		return &messageOption{
 			Message: format,
 		}
 	}
 
-	return &message{
+	return &messageOption{
 		Message:   format,
 		Params:    params,
 		Formatted: fmt.Sprintf(format, params...),

@@ -9,8 +9,6 @@ import (
 
 func ExampleEnvironment() {
 	cl := NewClient(
-		DSN(""),
-
 		// You can configure your environment at the client level
 		Environment("development"),
 	)
