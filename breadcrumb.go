@@ -5,9 +5,18 @@ import "time"
 // A Breadcrumb keeps track of an action which took place in the application
 // leading up to an event.
 type Breadcrumb interface {
+	// WithMessage sets the message displayed for this breadcrumb
 	WithMessage(msg string) Breadcrumb
+
+	// WithCategory sets the category that this breadcrumb belongs to
 	WithCategory(cat string) Breadcrumb
+
+	// Level sets the severity level of this breadcrumb to one of the
+	// predefined severity levels.
 	WithLevel(s Severity) Breadcrumb
+
+	// WithTimestamp overrides the timestamp of this breadcrumb with
+	// a new one.
 	WithTimestamp(ts time.Time) Breadcrumb
 }
 

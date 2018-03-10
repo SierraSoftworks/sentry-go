@@ -1,7 +1,5 @@
 package sentry
 
-var version = "1.0.0"
-
 func init() {
 	addDefaultOptionProvider(func() Option {
 		return &sdkOption{

@@ -35,9 +35,21 @@ func Breadcrumbs(list BreadcrumbsList) Option {
 // old breadcrumbs as new ones are added and is both type-safe and
 // O(1) execution time for inserts and removals.
 type BreadcrumbsList interface {
+	// Adjusts the maximum number of breadcrumbs which will be maintained
+	// in this list.
 	WithSize(length int) BreadcrumbsList
+
+	// NewDefault creates a new breadcrumb using the `default` type.
+	// You can provide any data you wish to include in the breadcrumb,
+	// or nil if you do not wish to include any extra data.
 	NewDefault(data map[string]interface{}) Breadcrumb
+
+	// NewNavigation creates a new navigation breadcrumb which represents
+	// a transition from one page to another.
 	NewNavigation(from, to string) Breadcrumb
+
+	// NewHTTPRequest creates a new HTTP request breadcrumb which
+	// describes the results of an HTTP request.
 	NewHTTPRequest(method, url string, statusCode int, reason string) Breadcrumb
 }
 

@@ -26,6 +26,8 @@ type packet map[string]Option
 
 // NewPacket creates a new packet which will be sent to the Sentry
 // server after its various options have been set.
+// You will not usually need to create a Packet yourself, instead
+// you should use your `Client`'s `Capture()` method.
 func NewPacket() Packet {
 	p := &packet{}
 

@@ -21,8 +21,13 @@ type SendQueue interface {
 }
 
 var (
+	// The ErrSendQueueFull error is used when an attempt to enqueue a
+	// new event fails as a result of no buffer space being available.
 	ErrSendQueueFull = fmt.Errorf("sentry: send queue was full")
 
+	// The ErrSendQueueShutdown error is used when an attempt to enqueue
+	// a new event fails as a result of the queue having been shutdown
+	// already.
 	ErrSendQueueShutdown = fmt.Errorf("sentry: send queue was shutdown")
 )
 
