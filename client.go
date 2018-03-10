@@ -62,6 +62,10 @@ func (c *client) UseSendQueue(queue SendQueue) Client {
 }
 
 func (c *client) fullDefaultOptions() []Option {
+	if c.parent == nil {
+		return c.options
+	}
+
 	return append(c.parent.fullDefaultOptions(), c.options...)
 }
 
