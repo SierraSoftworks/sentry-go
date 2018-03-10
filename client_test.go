@@ -32,8 +32,55 @@ func ExampleClient() {
 	)
 }
 
+func ExampleDefaultClient() {
+	DefaultClient().Capture(
+		Message("This is an example message"),
+	)
+}
+
+func ExampleUpdateDefaultClient() {
+	UpdateDefaultClient(DSN("")).Capture(
+		Message("This is an example message"),
+	)
+}
+
+func ExampleSetDefaultClient() {
+	cl := NewClient(DSN(""))
+	SetDefaultClient(cl)
+	DefaultClient().Capture(
+		Message("This is an example message"),
+	)
+}
+
 func TestClient(t *testing.T) {
 	Convey("Client", t, func() {
+		Convey("DefaultClient()", func() {
+			So(DefaultClient(), ShouldNotBeNil)
+			So(DefaultClient(), ShouldImplement, (*Client)(nil))
+			So(DefaultClient(), ShouldEqual, defaultClient)
+		})
+
+		Convey("SetDefaultClient()", func() {
+			cl := NewClient()
+
+			SetDefaultClient(cl)
+			So(DefaultClient(), ShouldEqual, cl)
+
+			SetDefaultClient(nil)
+			So(DefaultClient(), ShouldNotBeNil)
+		})
+
+		Convey("UpdateDefaultClient()", func() {
+			ocl := DefaultClient()
+			cl := UpdateDefaultClient(DSN(""))
+			So(cl, ShouldNotEqual, ocl)
+
+			cli, ok := cl.(*client)
+			So(ok, ShouldBeTrue)
+			So(cli.parent, ShouldEqual, ocl)
+			So(cli.options, ShouldResemble, []Option{DSN("")})
+		})
+
 		Convey("NewClient()", func() {
 			Convey("Should return a Client", func() {
 				So(NewClient(), ShouldImplement, (*Client)(nil))

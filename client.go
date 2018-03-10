@@ -20,6 +20,33 @@ type Client interface {
 	Capture(options ...Option) QueuedEvent
 }
 
+var defaultClient = NewClient()
+
+// The DefaultClient is a singleton client instance which can be configured
+// and used throughout your application.
+func DefaultClient() Client {
+	return defaultClient
+}
+
+// SetDefaultClient allows you to replace the DefaultClient with your own
+// version after you have configured it the way you wish.
+func SetDefaultClient(client Client) {
+	if client == nil {
+		client = NewClient()
+	}
+
+	defaultClient = client
+}
+
+// UpdateDefaultClient allows you to add options to the DefaultClient.
+// Changing these options will not affect derivative clients of the
+// previous DefaultClient.
+func UpdateDefaultClient(options ...Option) Client {
+	cl := DefaultClient().With(options...)
+	SetDefaultClient(cl)
+	return cl
+}
+
 type client struct {
 	parent  *client
 	options []Option
