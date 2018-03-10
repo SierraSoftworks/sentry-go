@@ -57,13 +57,13 @@ func TestHTTPRequest(t *testing.T) {
 			So(HTTPRequest(r).Class(), ShouldEqual, "request")
 		})
 
-		Convey("Ommit()", func() {
+		Convey("Omit()", func() {
 			Convey("Should return false with a valid request", func() {
-				So(HTTPRequest(r).(*httpRequestOption).Ommit(), ShouldBeFalse)
+				So(HTTPRequest(r).(*httpRequestOption).Omit(), ShouldBeFalse)
 			})
 
 			Convey("Should return true if no request was provided", func() {
-				So(HTTPRequest(nil).(*httpRequestOption).Ommit(), ShouldBeTrue)
+				So(HTTPRequest(nil).(*httpRequestOption).Omit(), ShouldBeTrue)
 			})
 		})
 

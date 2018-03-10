@@ -15,16 +15,16 @@ func (o *testOption) Class() string {
 	return "test"
 }
 
-type testOmmitableOption struct {
-	ommit bool
+type testOmitableOption struct {
+	omit bool
 }
 
-func (o *testOmmitableOption) Class() string {
+func (o *testOmitableOption) Class() string {
 	return "test"
 }
 
-func (o *testOmmitableOption) Ommit() bool {
-	return o.ommit
+func (o *testOmitableOption) Omit() bool {
+	return o.omit
 }
 
 type testFinalizableOption struct {

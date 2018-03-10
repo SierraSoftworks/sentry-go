@@ -8,11 +8,11 @@ type Option interface {
 	Class() string
 }
 
-// An OmmitableOption can opt to have itself left out of the packet by
-// making an addition-time determination in its Ommit() function.
+// An OmitableOption can opt to have itself left out of the packet by
+// making an addition-time determination in its Omit() function.
 // This is a useful tool for excluding empty fields automatically.
-type OmmitableOption interface {
-	Ommit() bool
+type OmitableOption interface {
+	Omit() bool
 }
 
 // The MergeableOption interface gives options the ability to merge themselves

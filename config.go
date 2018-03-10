@@ -17,7 +17,7 @@ func (o *configOption) Class() string {
 	return "sentry-go.config"
 }
 
-func (o *configOption) Ommit() bool {
+func (o *configOption) Omit() bool {
 	return true
 }
 

@@ -33,17 +33,17 @@ func TestConfig(t *testing.T) {
 			So(opt, ShouldImplement, (*Option)(nil))
 		})
 
-		Convey("Should implement the OmmitableOption interface", func() {
-			So(opt, ShouldImplement, (*OmmitableOption)(nil))
+		Convey("Should implement the OmitableOption interface", func() {
+			So(opt, ShouldImplement, (*OmitableOption)(nil))
 		})
 
 		Convey("Should implement the MergableOption interface", func() {
-			So(opt, ShouldImplement, (*OmmitableOption)(nil))
+			So(opt, ShouldImplement, (*OmitableOption)(nil))
 		})
 
-		Convey("Ommit()", func() {
+		Convey("Omit()", func() {
 			Convey("Should always return true", func() {
-				So(opt.Ommit(), ShouldBeTrue)
+				So(opt.Omit(), ShouldBeTrue)
 			})
 		})
 

@@ -60,10 +60,10 @@ func (p packet) setOption(option Option) {
 		return
 	}
 
-	// If the option implements Ommit(), check to see whether
-	// it has elected to be ommitted.
-	if ommittable, ok := option.(OmmitableOption); ok {
-		if ommittable.Ommit() {
+	// If the option implements Omit(), check to see whether
+	// it has elected to be omitted.
+	if omittable, ok := option.(OmitableOption); ok {
+		if omittable.Omit() {
 			return
 		}
 	}

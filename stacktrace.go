@@ -12,16 +12,16 @@ type StackTraceOption interface {
 // allowing you to quickly determine where in your code the event was generated.
 func StackTrace() StackTraceOption {
 	return &stackTraceOption{
-		Frames:   getStacktraceFrames(0),
-		Ommitted: []int{},
+		Frames:  getStacktraceFrames(0),
+		Omitted: []int{},
 
 		internalPrefixes: []string{},
 	}
 }
 
 type stackTraceOption struct {
-	Frames   stackTraceFrames `json:"frames"`
-	Ommitted []int            `json:"frames_omitted,omitempty"`
+	Frames  stackTraceFrames `json:"frames"`
+	Omitted []int            `json:"frames_omitted,omitempty"`
 
 	internalPrefixes []string
 }

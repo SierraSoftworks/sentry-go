@@ -69,10 +69,10 @@ func TestPacket(t *testing.T) {
 				So(pi["test"], ShouldEqual, opt)
 			})
 
-			Convey("Should obey the Ommit() function", func() {
+			Convey("Should obey the Omit() function", func() {
 				Convey("If it returns false", func() {
-					opt := &testOmmitableOption{
-						ommit: false,
+					opt := &testOmitableOption{
+						omit: false,
 					}
 
 					p.SetOptions(opt)
@@ -81,8 +81,8 @@ func TestPacket(t *testing.T) {
 				})
 
 				Convey("If it returns true", func() {
-					opt := &testOmmitableOption{
-						ommit: true,
+					opt := &testOmitableOption{
+						omit: true,
 					}
 
 					p.SetOptions(opt)
@@ -145,8 +145,8 @@ func TestPacket(t *testing.T) {
 				}
 
 				Convey(fmt.Sprintf("%s (%d)", opt.Class(), i), func() {
-					if ommitable, ok := opt.(OmmitableOption); ok {
-						if ommitable.Ommit() {
+					if omitable, ok := opt.(OmitableOption); ok {
+						if omitable.Omit() {
 							So(pi, ShouldNotContainKey, opt.Class())
 							return
 						}

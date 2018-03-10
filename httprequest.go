@@ -73,7 +73,7 @@ func (h *httpRequestOption) Sanitize(fields ...string) HTTPRequestOption {
 	return h
 }
 
-func (h *httpRequestOption) Ommit() bool {
+func (h *httpRequestOption) Omit() bool {
 	return h.request == nil
 }
 

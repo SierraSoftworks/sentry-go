@@ -207,18 +207,18 @@ func (i *myOption) Finalize() {
 }
 ```
 
-#### Ommitting Options from the Packet
+#### Omitting Options from the Packet
 In some situations you might find that you want to not include an
 option in the packet after all, perhaps the user hasn't provided all
 the required information or you couldn't gather it automatically.
 
-The `Ommit()` method allows your option to tell the packet whether or
+The `Omit()` method allows your option to tell the packet whether or
 not to include it. We actually use it internally for things like the DSN
 which shouldn't be sent to Sentry in the packet, but which we still want
 to read from the options builder.
 
 ```go
-func (i *myOption) Ommit() bool {
+func (i *myOption) Omit() bool {
     return len(i.Field) == 0
 }
 ```
