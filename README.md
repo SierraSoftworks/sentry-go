@@ -49,7 +49,7 @@ func main() {
 
     id := cl.Capture(
         sentry.Message("Example exception submission to Sentry"),
-        sentry.Exception(err),
+        sentry.Exception(sentry.NewExceptionInfo().ForError(err)),
     ).Wait().EventID()
     fmt.Println("Send event to Sentry: ", id)
 }
