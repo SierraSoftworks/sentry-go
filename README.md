@@ -51,7 +51,7 @@ func main() {
         sentry.Message("Example exception submission to Sentry"),
         sentry.Exception(err),
     ).Wait().EventID()
-    fmt.Println("Send event to Sentry: ", id)
+    fmt.Println("Sent event to Sentry: ", id)
 }
 ```
 
