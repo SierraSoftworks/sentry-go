@@ -64,6 +64,8 @@ func TestSequentialSendQueue(t *testing.T) {
 				p := NewPacket()
 				So(p, ShouldNotBeNil)
 
+				time.Sleep(1 * time.Millisecond)
+
 				// First entry will be processed
 				e1 := q.Enqueue(cfg, p)
 				So(e1, ShouldNotBeNil)
@@ -75,6 +77,8 @@ func TestSequentialSendQueue(t *testing.T) {
 				select {
 				case <-transport.ch:
 					So(e1.Error(), ShouldBeNil)
+				case err := <-e1.WaitChannel():
+					So(err, ShouldBeNil)
 				case <-time.After(100 * time.Millisecond):
 					So(fmt.Errorf("timeout"), ShouldBeNil)
 				}
@@ -82,9 +86,11 @@ func TestSequentialSendQueue(t *testing.T) {
 				select {
 				case <-transport.ch:
 					So(fmt.Errorf("shouldn't send"), ShouldBeNil)
-				case <-time.After(10 * time.Millisecond):
-					So(e2.Error(), ShouldNotBeNil)
-					So(e2.Error().Error(), ShouldContainSubstring, ErrSendQueueFull.Error())
+				case err := <-e2.WaitChannel():
+					So(err, ShouldNotBeNil)
+					So(err.Error(), ShouldContainSubstring, ErrSendQueueFull.Error())
+				case <-time.After(100 * time.Millisecond):
+					So(fmt.Errorf("timeout"), ShouldBeNil)
 				}
 			})
 
@@ -102,9 +108,11 @@ func TestSequentialSendQueue(t *testing.T) {
 				select {
 				case <-transport.ch:
 					So(fmt.Errorf("shouldn't send"), ShouldBeNil)
-				case <-time.After(10 * time.Millisecond):
-					So(e.Error(), ShouldNotBeNil)
-					So(e.Error().Error(), ShouldContainSubstring, ErrSendQueueShutdown.Error())
+				case err := <-e.WaitChannel():
+					So(err, ShouldNotBeNil)
+					So(err.Error(), ShouldContainSubstring, ErrSendQueueShutdown.Error())
+				case <-time.After(100 * time.Millisecond):
+					So(fmt.Errorf("timeout"), ShouldBeNil)
 				}
 			})
 		})
