@@ -58,7 +58,7 @@ func TestHTTPTransport(t *testing.T) {
 		So(ok, ShouldBeTrue)
 
 		Convey("newHTTPTransport", func() {
-			So(ht.transport, ShouldEqual, http.DefaultClient)
+			So(ht.client, ShouldNotEqual, http.DefaultClient)
 		})
 
 		Convey("Send()", func(c C) {

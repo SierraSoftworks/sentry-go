@@ -3,6 +3,7 @@ package sentry
 import (
 	"bytes"
 	"compress/zlib"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -10,17 +11,40 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	log "github.com/Sirupsen/logrus"
+	"github.com/certifi/gocertifi"
 	"github.com/pkg/errors"
 )
 
+var (
+	// ErrMissingRootTLSCerts is used when this library cannot load the required
+	// RootCA certificates needed for its HTTPS transport.
+	ErrMissingRootTLSCerts = fmt.Errorf("sentry: Failed to load root TLS certificates")
+)
+
 type httpTransport struct {
-	transport *http.Client
+	client *http.Client
 }
 
 func newHTTPTransport() Transport {
-	return &httpTransport{
-		transport: http.DefaultClient,
+	t := &httpTransport{
+		client: http.DefaultClient,
 	}
+
+	rootCAs, err := gocertifi.CACerts()
+	if err != nil {
+		log.WithError(errors.Wrap(err, ErrMissingRootTLSCerts.Error())).Error(ErrMissingRootTLSCerts.Error())
+		return t
+	}
+
+	t.client = &http.Client{
+		Transport: &http.Transport{
+			Proxy:           http.ProxyFromEnvironment,
+			TLSClientConfig: &tls.Config{RootCAs: rootCAs},
+		},
+	}
+
+	return t
 }
 
 func (t *httpTransport) Send(dsn string, packet Packet) error {
@@ -47,7 +71,7 @@ func (t *httpTransport) Send(dsn string, packet Packet) error {
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("User-Agent", fmt.Sprintf("sentry-go %s (Sierra Softworks; github.com/SierraSoftworks/sentry-go)", version))
 
-	res, err := t.transport.Do(req)
+	res, err := t.client.Do(req)
 	if err != nil {
 		return errors.Wrap(err, "failed to submit request")
 	}
