@@ -24,22 +24,22 @@ func DSN(dsn string) Option {
 	}
 }
 
-var (
+const (
 	// ErrBadURL is returned when a DSN cannot be parsed due to
 	// formatting errors in its URL
-	ErrBadURL = fmt.Errorf("sentry: bad DSN URL")
+	ErrBadURL = ErrType("sentry: bad DSN URL")
 
 	// ErrMissingPublicKey is returned when a DSN does not have
 	// a valid public key contained within its URL
-	ErrMissingPublicKey = fmt.Errorf("sentry: missing public key")
+	ErrMissingPublicKey = ErrType("sentry: missing public key")
 
 	// ErrMissingPrivateKey is returned when a DSN does not have
 	// a valid private key contained within its URL
-	ErrMissingPrivateKey = fmt.Errorf("sentry: missing private key")
+	ErrMissingPrivateKey = ErrType("sentry: missing private key")
 
 	// ErrMissingProjectID is returned when a DSN does not have a valid
 	// project ID contained within its URL
-	ErrMissingProjectID = fmt.Errorf("sentry: missing project ID")
+	ErrMissingProjectID = ErrType("sentry: missing project ID")
 )
 
 type dsn struct {

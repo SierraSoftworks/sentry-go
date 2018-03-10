@@ -16,10 +16,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
+const (
 	// ErrMissingRootTLSCerts is used when this library cannot load the required
 	// RootCA certificates needed for its HTTPS transport.
-	ErrMissingRootTLSCerts = fmt.Errorf("sentry: Failed to load root TLS certificates")
+	ErrMissingRootTLSCerts = ErrType("sentry: Failed to load root TLS certificates")
 )
 
 type httpTransport struct {

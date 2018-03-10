@@ -1,9 +1,5 @@
 package sentry
 
-import (
-	"fmt"
-)
-
 // A SendQueue is used by the Sentry client to coordinate the transmission
 // of events. Custom queues can be used to control parallelism and circuit
 // breaking as necessary.
@@ -20,15 +16,15 @@ type SendQueue interface {
 	Shutdown(wait bool)
 }
 
-var (
+const (
 	// The ErrSendQueueFull error is used when an attempt to enqueue a
 	// new event fails as a result of no buffer space being available.
-	ErrSendQueueFull = fmt.Errorf("sentry: send queue was full")
+	ErrSendQueueFull = ErrType("sentry: send queue was full")
 
 	// The ErrSendQueueShutdown error is used when an attempt to enqueue
 	// a new event fails as a result of the queue having been shutdown
 	// already.
-	ErrSendQueueShutdown = fmt.Errorf("sentry: send queue was shutdown")
+	ErrSendQueueShutdown = ErrType("sentry: send queue was shutdown")
 )
 
 var defaultSendQueue SendQueue
