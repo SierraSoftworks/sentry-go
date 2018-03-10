@@ -37,3 +37,19 @@ func TestTransport(t *testing.T) {
 		})
 	})
 }
+
+func testNewTestTransport() *testTransport {
+	return &testTransport{
+		ch: make(chan Packet),
+	}
+}
+
+type testTransport struct {
+	ch  chan Packet
+	err error
+}
+
+func (t *testTransport) Send(dsn string, packet Packet) error {
+	t.ch <- packet
+	return t.err
+}

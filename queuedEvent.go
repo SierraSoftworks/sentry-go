@@ -9,6 +9,7 @@ import (
 type QueuedEvent interface {
 	EventID() string
 	Wait() QueuedEvent
+	WaitChannel() <-chan error
 	Error() error
 }
 
@@ -60,6 +61,23 @@ func (e *queuedEvent) Wait() QueuedEvent {
 	e.wait.Wait()
 
 	return e
+}
+
+func (e *queuedEvent) WaitChannel() <-chan error {
+	ch := make(chan error)
+
+	go func() {
+		if !e.complete {
+			e.wait.Wait()
+		}
+
+		if e.err != nil {
+			ch <- e.err
+		}
+		close(ch)
+	}()
+
+	return ch
 }
 
 func (e *queuedEvent) Error() error {

@@ -49,6 +49,10 @@ func (q *sequentialSendQueue) Enqueue(cfg Config, packet Packet) QueuedEvent {
 }
 
 func (q *sequentialSendQueue) Shutdown(wait bool) {
+	if q.shutdown {
+		return
+	}
+
 	q.shutdownCh <- struct{}{}
 	q.shutdown = true
 	if wait {
