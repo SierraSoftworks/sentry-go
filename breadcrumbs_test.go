@@ -6,7 +6,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func ExampleBreadcrumbs() {
+func ExampleDefaultBreadcrumbs() {
 	// We can change the maximum number of breadcrumbs to be stored
 	DefaultBreadcrumbs().WithSize(5)
 
@@ -33,7 +33,7 @@ func ExampleBreadcrumbs() {
 	NewClient().Capture(Message("Finally, we send the event with all our breadcrumbs included"))
 }
 
-func ExampleBreadcrumbsContext() {
+func ExampleBreadcrumbs() {
 	rootClient := NewClient()
 	DefaultBreadcrumbs().NewDefault(nil).WithMessage("Breadcrumb in the default context")
 

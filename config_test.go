@@ -6,6 +6,20 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func ExampleConfig() {
+	cl := NewClient(
+		// Specify the DSN to use for sending events, or ""
+		// to disable sending events altogether.
+		DSN(""),
+
+		// Specify a custom transport to use for sending the
+		// events to Sentry. Nil resets this to its default (HTTP)
+		UseTransport(nil),
+	)
+
+	cl.Capture(Message("Example"))
+}
+
 func TestConfig(t *testing.T) {
 	Convey("Config", t, func() {
 		Convey("Should register itself as a default option provider", func() {

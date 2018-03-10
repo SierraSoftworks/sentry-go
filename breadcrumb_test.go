@@ -7,6 +7,30 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func ExampleBreadcrumb() {
+	b := DefaultBreadcrumbs().NewDefault(nil)
+
+	// You can set the severity level for the breadcrumb
+	b.WithLevel(Error)
+
+	// You can configure the category that the breadcrumb belongs to
+	b.WithCategory("auth")
+
+	// You can also specify a message describing the breadcrumb
+	b.WithMessage("User's credentials were invalid")
+
+	// And if you need to change the timestamp, you can do that too
+	b.WithTimestamp(time.Now())
+
+	// All together now!
+	DefaultBreadcrumbs().
+		NewDefault(nil).
+		WithLevel(Error).
+		WithCategory("auth").
+		WithMessage("User's credentials were invalid").
+		WithTimestamp(time.Now())
+}
+
 func TestBreadcrumb(t *testing.T) {
 	Convey("Breadcrumb", t, func() {
 		data := map[string]interface{}{

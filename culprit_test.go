@@ -6,6 +6,16 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func ExampleCulprit() {
+	cl := NewClient(
+		DSN(""),
+	)
+
+	cl.Capture(
+		Culprit("example"),
+	)
+}
+
 func TestCulprit(t *testing.T) {
 	Convey("Culprit", t, func() {
 		Convey("Culprit()", func() {

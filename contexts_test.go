@@ -9,15 +9,15 @@ import (
 func TestContexts(t *testing.T) {
 	Convey("Contexts", t, func() {
 		Convey("RuntimeContext()", func() {
-
+			// TODO: Add tests for this
 		})
 
 		Convey("OSContext()", func() {
-
+			// TODO: Add tests for this
 		})
 
 		Convey("DeviceContext()", func() {
-
+			// TODO: Add tests for this
 		})
 
 		Convey("Context()", func() {

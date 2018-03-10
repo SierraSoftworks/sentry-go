@@ -6,6 +6,19 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func ExampleDSN() {
+	cl := NewClient(
+		// You can configure the DSN when creating a client
+		DSN("https://key:pass@example.com/sentry/1"),
+	)
+
+	cl.Capture(
+		// You can also configure the DSN when sending an event
+		DSN(""),
+		Message("This won't be sent"),
+	)
+}
+
 func TestDSN(t *testing.T) {
 	Convey("DSN", t, func() {
 		Convey("Parse()", func() {

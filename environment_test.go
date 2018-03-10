@@ -7,6 +7,20 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func ExampleEnvironment() {
+	cl := NewClient(
+		DSN(""),
+
+		// You can configure your environment at the client level
+		Environment("development"),
+	)
+
+	cl.Capture(
+		// ...or at the event level
+		Environment("prod"),
+	)
+}
+
 func TestEnvironment(t *testing.T) {
 	Convey("Environment", t, func() {
 		Convey("Should register with the default providers", func() {
