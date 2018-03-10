@@ -84,5 +84,35 @@ func TestConfig(t *testing.T) {
 				So(c, ShouldNotEqual, opt)
 			})
 		})
+
+		Convey("Transport()", func() {
+			Convey("When transport is nil it should return the DefaultTransport", func() {
+				c := &configOption{}
+				So(c.Transport(), ShouldEqual, DefaultTransport())
+			})
+
+			Convey("When transport is defined, it should return that", func() {
+				t := newHTTPTransport()
+				c := &configOption{
+					transport: t,
+				}
+				So(c.Transport(), ShouldEqual, t)
+			})
+		})
+
+		Convey("DSN", func() {
+			Convey("When DSN is nil it should return an empty DSN", func() {
+				c := &configOption{}
+				So(c.DSN(), ShouldEqual, "")
+			})
+
+			Convey("When DSN is defined, it should return that", func() {
+				d := "https://key:secret@example.com/sentry/1"
+				c := &configOption{
+					dsn: &d,
+				}
+				So(c.DSN(), ShouldEqual, "https://key:secret@example.com/sentry/1")
+			})
+		})
 	})
 }

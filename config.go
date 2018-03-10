@@ -55,5 +55,9 @@ func (o *configOption) DSN() string {
 }
 
 func (o *configOption) Transport() Transport {
+	if o.transport == nil {
+		return DefaultTransport()
+	}
+
 	return o.transport
 }

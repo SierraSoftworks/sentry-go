@@ -73,7 +73,13 @@ func (q *sequentialSendQueue) worker(buffer <-chan QueuedEventInternal) {
 			}
 
 			cfg := e.Config()
-			err := cfg.Transport().Send(cfg.DSN(), e.Packet())
+			t := cfg.Transport()
+			if t == nil {
+				e.Complete(errors.New("no transport configured"))
+				continue
+			}
+
+			err := t.Send(cfg.DSN(), e.Packet())
 			e.Complete(err)
 		}
 	}
