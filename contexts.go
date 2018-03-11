@@ -3,24 +3,23 @@ package sentry
 import (
 	"encoding/json"
 	"runtime"
+	"strings"
 )
 
 func init() {
-	addDefaultOptionProvider(func() Option {
-		return RuntimeContext("go", runtime.Version())
-	})
-
-	addDefaultOptionProvider(func() Option {
-		return OSContext(&OSContextInfo{
-			Name: runtime.GOOS,
-		})
-	})
-
-	addDefaultOptionProvider(func() Option {
-		return DeviceContext(&DeviceContextInfo{
+	AddDefaultOptions(
+		RuntimeContext("go", strings.TrimPrefix(runtime.Version(), "go")),
+		OSContext(&OSContextInfo{
+			Name:          runtime.GOOS,
+			Version:       "Unknown",
+			KernelVersion: "Unknown",
+		}),
+		DeviceContext(&DeviceContextInfo{
 			Architecture: runtime.GOARCH,
-		})
-	})
+			Family:       "Unknown",
+			Model:        "Unknown",
+		}),
+	)
 }
 
 // OSContextInfo describes the operating system that your application

@@ -35,9 +35,9 @@ func TestException(t *testing.T) {
 
 					exx, ok := exo3.(*exceptionOption)
 					So(ok, ShouldBeTrue)
-					So(exx.exceptions, ShouldHaveLength, 2)
-					So(exx.exceptions[0], ShouldEqual, ex)
-					So(exx.exceptions[1], ShouldEqual, exNew)
+					So(exx.Exceptions, ShouldHaveLength, 2)
+					So(exx.Exceptions[0], ShouldEqual, ex)
+					So(exx.Exceptions[1], ShouldEqual, exNew)
 				})
 
 				Convey("Should overwrite if it doesn't recognize the old option", func() {
@@ -71,8 +71,8 @@ func TestException(t *testing.T) {
 				// errors.Wrap adds two entries to the cause heirarchy
 				// 1 - withMessage{}
 				// 2 - withStack{}
-				So(exx.exceptions, ShouldHaveLength, 1+(3*2))
-				So(exx.exceptions[0].Value, ShouldEqual, "root cause")
+				So(exx.Exceptions, ShouldHaveLength, 1+(3*2))
+				So(exx.Exceptions[0].Value, ShouldEqual, "root cause")
 			})
 		})
 
@@ -116,6 +116,23 @@ func TestException(t *testing.T) {
 					So(ex.ForError(err), ShouldEqual, ex)
 					So(ex.Module, ShouldEqual, "test")
 					So(ex.Value, ShouldEqual, "example error")
+				})
+			})
+		})
+
+		Convey("MarshalJSON", func() {
+			Convey("Should marshal correctly", func() {
+				serialized := testOptionsSerialize(Exception(&ExceptionInfo{
+					Type:  "TestException",
+					Value: "This is a test",
+				}))
+				So(serialized, ShouldResemble, map[string]interface{}{
+					"values": []interface{}{
+						map[string]interface{}{
+							"type":  "TestException",
+							"value": "This is a test",
+						},
+					},
 				})
 			})
 		})

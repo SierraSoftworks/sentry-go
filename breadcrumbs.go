@@ -8,9 +8,7 @@ import (
 var globalBreadcrumbs = NewBreadcrumbsList(10)
 
 func init() {
-	addDefaultOptionProvider(func() Option {
-		return Breadcrumbs(DefaultBreadcrumbs())
-	})
+	AddDefaultOptions(Breadcrumbs(DefaultBreadcrumbs()))
 }
 
 // DefaultBreadcrumbs are registered for inclusion in situations where

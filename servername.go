@@ -6,14 +6,12 @@ import (
 )
 
 func init() {
-	addDefaultOptionProvider(func() Option {
-		hostname, err := os.Hostname()
-		if err != nil {
-			return nil
-		}
+	hostname, err := os.Hostname()
+	if err != nil {
+		return
+	}
 
-		return ServerName(hostname)
-	})
+	AddDefaultOptions(ServerName(hostname))
 }
 
 // ServerName allows you to configure the hostname reported to Sentry

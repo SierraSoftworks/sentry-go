@@ -5,9 +5,7 @@ import (
 )
 
 func init() {
-	addDefaultOptionProvider(func() Option {
-		return Platform("go")
-	})
+	AddDefaultOptions(Platform("go"))
 }
 
 // Platform allows you to configure the platform reported to Sentry. This is used

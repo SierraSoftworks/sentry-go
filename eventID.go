@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	addDefaultOptionProvider(func() Option {
+	AddDefaultOptionProvider(func() Option {
 		id, err := NewEventID()
 		if err != nil {
 			return nil

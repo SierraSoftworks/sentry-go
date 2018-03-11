@@ -5,9 +5,7 @@ import (
 )
 
 func init() {
-	addDefaultOptionProvider(func() Option {
-		return Logger("root")
-	})
+	AddDefaultOptions(Logger("root"))
 }
 
 // Logger allows you to configure the hostname reported to Sentry

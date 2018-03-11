@@ -38,10 +38,12 @@ import (
 )
 
 func main() {
-    cl := sentry.NewClient(
-        // sentry.DSN("..."), // - Sourced from your $SENTRY_DSN env arg by default
+    sentry.AddDefaultOptions(
+        sentry.DSN("..."), // If you don't override this, it'll be fetched from $SENTRY_DSN
         sentry.Release("v1.0.0"),
     )
+    
+    cl := sentry.NewClient()
 
     sentry.DefaultBreadcrumbs().NewDefault(nil).WithMessage("Application started").WithCategory("log")
 

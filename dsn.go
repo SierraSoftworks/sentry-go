@@ -11,9 +11,7 @@ import (
 )
 
 func init() {
-	addDefaultOptionProvider(func() Option {
-		return DSN(os.Getenv("SENTRY_DSN"))
-	})
+	AddDefaultOptions(DSN(os.Getenv("SENTRY_DSN")))
 }
 
 // DSN lets you specify the unique Sentry DSN used to submit events for

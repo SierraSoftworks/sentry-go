@@ -68,7 +68,7 @@ func ExceptionForError(err error) Option {
 	}
 
 	return &exceptionOption{
-		exceptions: exceptions,
+		Exceptions: exceptions,
 	}
 }
 
@@ -76,14 +76,14 @@ func ExceptionForError(err error) Option {
 // within your application as part of the event you send to Sentry.
 func Exception(info *ExceptionInfo) Option {
 	return &exceptionOption{
-		exceptions: []*ExceptionInfo{info},
+		Exceptions: []*ExceptionInfo{info},
 	}
 }
 
 var errorMsgPattern = regexp.MustCompile(`\A(\w+): (.+)\z`)
 
 type exceptionOption struct {
-	exceptions []*ExceptionInfo
+	Exceptions []*ExceptionInfo `json:"values"`
 }
 
 func (o *exceptionOption) Class() string {
@@ -93,7 +93,7 @@ func (o *exceptionOption) Class() string {
 func (o *exceptionOption) Merge(old Option) Option {
 	if old, ok := old.(*exceptionOption); ok {
 		return &exceptionOption{
-			exceptions: append(old.exceptions, o.exceptions...),
+			Exceptions: append(old.Exceptions, o.Exceptions...),
 		}
 	}
 

@@ -4,9 +4,7 @@ import "encoding/json"
 
 func init() {
 	// Configure the default severity level as Error
-	addDefaultOptionProvider(func() Option {
-		return Level(Error)
-	})
+	AddDefaultOptions(Level(Error))
 }
 
 // Level is used to set the severity level of an event before it

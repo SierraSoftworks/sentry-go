@@ -3,10 +3,76 @@ package sentry
 import (
 	"bytes"
 	"encoding/json"
+	"os"
 	"reflect"
 
+	"testing"
+
 	"github.com/smartystreets/goconvey/convey"
+	. "github.com/smartystreets/goconvey/convey"
 )
+
+func ExampleAddDefaultOptions() {
+	// You can add default options to all of your root Sentry
+	// clients like this.
+	AddDefaultOptions(
+		Release("v1.0.0"),
+		DSN("..."),
+	)
+}
+
+func ExampleAddDefaultOptionProvider() {
+	// You can also register options providers which will dynamically
+	// generate options for each new event that is sent
+	AddDefaultOptionProvider(func() Option {
+		if dsn := os.Getenv("SENTRY_DSN"); dsn != "" {
+			return DSN(dsn)
+		}
+
+		return nil
+	})
+}
+
+func TestOptions(t *testing.T) {
+	Convey("Options", t, func() {
+		oldOptionsProviders := defaultOptionProviders
+		defaultOptionProviders = []func() Option{}
+		defer func() {
+			defaultOptionProviders = oldOptionsProviders
+		}()
+
+		Convey("AddDefaultOptionProvider", func() {
+			So(defaultOptionProviders, ShouldBeEmpty)
+
+			id, err := NewEventID()
+			So(err, ShouldBeNil)
+			provider := func() Option {
+				return EventID(id)
+			}
+
+			AddDefaultOptionProvider(provider)
+			So(defaultOptionProviders, ShouldHaveLength, 1)
+
+			for _, provider := range defaultOptionProviders {
+				So(provider(), ShouldResemble, EventID(id))
+			}
+		})
+
+		Convey("AddDefaultOptions", func() {
+			So(defaultOptionProviders, ShouldBeEmpty)
+
+			id, err := NewEventID()
+			So(err, ShouldBeNil)
+
+			AddDefaultOptions(EventID(id), EventID(id))
+			So(defaultOptionProviders, ShouldHaveLength, 2)
+
+			for _, provider := range defaultOptionProviders {
+				So(provider(), ShouldResemble, EventID(id))
+			}
+		})
+	})
+}
 
 type testOption struct {
 }

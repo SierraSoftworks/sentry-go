@@ -36,6 +36,25 @@ type FinalizableOption interface {
 // options dynamically, these are exposed as callbacks.
 var defaultOptionProviders = []func() Option{}
 
-func addDefaultOptionProvider(provider func() Option) {
+// AddDefaultOptions allows you to configure options which will be globally
+// set on all top-level clients by default. You can override these options
+// later by specifying replacements in each client or event's options list.
+func AddDefaultOptions(options ...Option) {
+	for _, opt := range options {
+		if opt == nil {
+			continue
+		}
+
+		o := opt
+		AddDefaultOptionProvider(func() Option {
+			return o
+		})
+	}
+}
+
+// AddDefaultOptionProvider allows you to register a new default option which will
+// be globally set on all top-level clients. You can override this option
+// later by specifying a replacement in each client or event's options list.
+func AddDefaultOptionProvider(provider func() Option) {
 	defaultOptionProviders = append(defaultOptionProviders, provider)
 }

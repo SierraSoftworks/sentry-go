@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	addDefaultOptionProvider(func() Option {
+	AddDefaultOptionProvider(func() Option {
 		if env := os.Getenv("ENV"); env != "" {
 			return Environment(env)
 		}

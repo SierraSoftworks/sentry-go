@@ -1,12 +1,10 @@
 package sentry
 
 func init() {
-	addDefaultOptionProvider(func() Option {
-		return &sdkOption{
-			Name:         "SierraSoftworks/sentry-go",
-			Version:      version,
-			Integrations: []string{},
-		}
+	AddDefaultOptions(&sdkOption{
+		Name:         "SierraSoftworks/sentry-go",
+		Version:      version,
+		Integrations: []string{},
 	})
 }
 

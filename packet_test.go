@@ -2,7 +2,6 @@ package sentry
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -127,35 +126,6 @@ func TestPacket(t *testing.T) {
 					So(pi["test"], ShouldResemble, &testMergeableOption{data: 3})
 				})
 			})
-		})
-
-		Convey("Default Providers", func() {
-			p := NewPacket()
-
-			pp, ok := p.(*packet)
-			So(ok, ShouldBeTrue)
-			So(pp, ShouldNotBeNil)
-
-			pi := *pp
-
-			for i, provider := range defaultOptionProviders {
-				opt := provider()
-				if opt == nil {
-					continue
-				}
-
-				Convey(fmt.Sprintf("%s (%d)", opt.Class(), i), func() {
-					if omitable, ok := opt.(OmitableOption); ok {
-						if omitable.Omit() {
-							So(pi, ShouldNotContainKey, opt.Class())
-							return
-						}
-					}
-
-					So(pi, ShouldContainKey, opt.Class())
-					So(pi[opt.Class()], ShouldHaveSameTypeAs, opt)
-				})
-			}
 		})
 
 		Convey("MarshalJSON", func() {

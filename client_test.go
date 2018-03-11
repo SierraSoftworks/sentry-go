@@ -38,47 +38,12 @@ func ExampleDefaultClient() {
 	)
 }
 
-func ExampleUpdateDefaultClient() {
-	UpdateDefaultClient(DSN("")).Capture(
-		Message("This is an example message"),
-	)
-}
-
-func ExampleSetDefaultClient() {
-	cl := NewClient(DSN(""))
-	SetDefaultClient(cl)
-	DefaultClient().Capture(
-		Message("This is an example message"),
-	)
-}
-
 func TestClient(t *testing.T) {
 	Convey("Client", t, func() {
 		Convey("DefaultClient()", func() {
 			So(DefaultClient(), ShouldNotBeNil)
 			So(DefaultClient(), ShouldImplement, (*Client)(nil))
 			So(DefaultClient(), ShouldEqual, defaultClient)
-		})
-
-		Convey("SetDefaultClient()", func() {
-			cl := NewClient()
-
-			SetDefaultClient(cl)
-			So(DefaultClient(), ShouldEqual, cl)
-
-			SetDefaultClient(nil)
-			So(DefaultClient(), ShouldNotBeNil)
-		})
-
-		Convey("UpdateDefaultClient()", func() {
-			ocl := DefaultClient()
-			cl := UpdateDefaultClient(DSN(""))
-			So(cl, ShouldNotEqual, ocl)
-
-			cli, ok := cl.(*client)
-			So(ok, ShouldBeTrue)
-			So(cli.parent, ShouldEqual, ocl)
-			So(cli.options, ShouldResemble, []Option{DSN("")})
 		})
 
 		Convey("NewClient()", func() {
@@ -187,6 +152,32 @@ func TestClient(t *testing.T) {
 		})
 
 		Convey("fullDefaultOptions()", func() {
+			Convey("Should include the default providers' options", func() {
+				cl := NewClient()
+				So(cl, ShouldNotBeNil)
+
+				cll, ok := cl.(*client)
+				So(ok, ShouldBeTrue)
+
+				opts := cll.fullDefaultOptions()
+				So(opts, ShouldNotBeNil)
+				So(opts, ShouldNotBeEmpty)
+
+				i := 0
+				for _, provider := range defaultOptionProviders {
+					opt := provider()
+					if opt == nil {
+						continue
+					}
+
+					Convey(fmt.Sprintf("%s (%d)", opt.Class(), i), func() {
+						So(opts[i], ShouldHaveSameTypeAs, opt)
+					})
+
+					i++
+				}
+			})
+
 			Convey("With a root client", func() {
 				opt := &testOption{}
 
@@ -196,7 +187,7 @@ func TestClient(t *testing.T) {
 				cll, ok := cl.(*client)
 				So(ok, ShouldBeTrue)
 
-				So(cll.fullDefaultOptions(), ShouldResemble, []Option{opt})
+				So(cll.fullDefaultOptions(), ShouldContain, opt)
 			})
 
 			Convey("With a derived client", func() {
@@ -212,7 +203,9 @@ func TestClient(t *testing.T) {
 				cll, ok := dcl.(*client)
 				So(ok, ShouldBeTrue)
 
-				So(cll.fullDefaultOptions(), ShouldResemble, []Option{opt1, opt2})
+				opts := cll.fullDefaultOptions()
+				So(opts, ShouldContain, opt1)
+				So(opts, ShouldContain, opt2)
 			})
 		})
 

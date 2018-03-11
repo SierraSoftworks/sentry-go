@@ -29,13 +29,7 @@ type packet map[string]Option
 // You will not usually need to create a Packet yourself, instead
 // you should use your `Client`'s `Capture()` method.
 func NewPacket() Packet {
-	p := &packet{}
-
-	for _, provider := range defaultOptionProviders {
-		p.setOption(provider())
-	}
-
-	return p
+	return &packet{}
 }
 
 func (p packet) Clone() Packet {

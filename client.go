@@ -28,25 +28,6 @@ func DefaultClient() Client {
 	return defaultClient
 }
 
-// SetDefaultClient allows you to replace the DefaultClient with your own
-// version after you have configured it the way you wish.
-func SetDefaultClient(client Client) {
-	if client == nil {
-		client = NewClient()
-	}
-
-	defaultClient = client
-}
-
-// UpdateDefaultClient allows you to add options to the DefaultClient.
-// Changing these options will not affect derivative clients of the
-// previous DefaultClient.
-func UpdateDefaultClient(options ...Option) Client {
-	cl := DefaultClient().With(options...)
-	SetDefaultClient(cl)
-	return cl
-}
-
 type client struct {
 	parent  *client
 	options []Option
@@ -97,7 +78,15 @@ func (c *client) getQueue() SendQueue {
 
 func (c *client) fullDefaultOptions() []Option {
 	if c.parent == nil {
-		return c.options
+		rootOpts := []Option{}
+		for _, provider := range defaultOptionProviders {
+			opt := provider()
+			if opt != nil {
+				rootOpts = append(rootOpts, opt)
+			}
+		}
+
+		return append(rootOpts, c.options...)
 	}
 
 	return append(c.parent.fullDefaultOptions(), c.options...)

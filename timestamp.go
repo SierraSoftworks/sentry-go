@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	addDefaultOptionProvider(func() Option {
+	AddDefaultOptionProvider(func() Option {
 		return Timestamp(time.Now().UTC())
 	})
 }
