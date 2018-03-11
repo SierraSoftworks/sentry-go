@@ -67,11 +67,12 @@ func TestHTTPTransport(t *testing.T) {
 			p := NewPacket()
 
 			received := false
+			statusCode := 200
 
 			mux := http.NewServeMux()
 			mux.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
 				received = true
-				res.WriteHeader(200)
+				res.WriteHeader(statusCode)
 				res.Write([]byte("No data"))
 
 				c.So(req.Method, ShouldEqual, "POST")
@@ -106,6 +107,42 @@ func TestHTTPTransport(t *testing.T) {
 				p.SetOptions(longMessage(1000))
 				So(t.Send(dsn, p), ShouldBeNil)
 				So(received, ShouldBeTrue)
+			})
+
+			Convey("Without a DSN", func() {
+				So(t.Send("", p), ShouldBeNil)
+				So(received, ShouldBeFalse)
+			})
+
+			Convey("With an invalid DSN URL", func() {
+				err := t.Send(":", p)
+				So(err, ShouldNotBeNil)
+				So(ErrBadURL.IsInstance(err), ShouldBeTrue)
+			})
+
+			Convey("With a missing public key", func() {
+				err := t.Send("https://example.com/sentry/1", p)
+				So(err, ShouldNotBeNil)
+				So(ErrMissingPublicKey.IsInstance(err), ShouldBeTrue)
+			})
+
+			Convey("With a missing private key", func() {
+				err := t.Send("https://key@example.com/sentry/1", p)
+				So(err, ShouldNotBeNil)
+				So(ErrMissingPrivateKey.IsInstance(err), ShouldBeTrue)
+			})
+
+			Convey("When it cannot connect to the server", func() {
+				err := t.Send("https://key:secret@invalid_domain.not_a_tld/sentry/1", p)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldStartWith, "failed to submit request: ")
+			})
+
+			Convey("When an HTTP error is encountered", func() {
+				statusCode = 403
+				err := t.Send(dsn, p)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "got http status 403, expected 200")
 			})
 		})
 

@@ -81,16 +81,11 @@ func (t *httpTransport) Send(dsn string, packet Packet) error {
 		return errors.Wrap(err, "failed to submit request")
 	}
 
-	resBody, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return errors.Wrap(err, "failed to read body")
-	}
-
+	io.Copy(ioutil.Discard, res.Body)
 	res.Body.Close()
 
 	if res.StatusCode != 200 {
-		log.WithField("body", string(resBody)).WithField("statusCode", res.StatusCode).Debug("sentry: Request to send event failed")
-		return fmt.Errorf("got http status %d, expected 200", res.StatusCode)
+		return errors.Errorf("got http status %d, expected 200", res.StatusCode)
 	}
 
 	return nil
