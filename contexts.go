@@ -4,19 +4,23 @@ import (
 	"encoding/json"
 	"runtime"
 	"strings"
+
+	"github.com/matishsiao/goInfo"
 )
 
 func init() {
+	gi := goInfo.GetInfo()
+
 	AddDefaultOptions(
 		RuntimeContext("go", strings.TrimPrefix(runtime.Version(), "go")),
 		OSContext(&OSContextInfo{
-			Name:          runtime.GOOS,
-			Version:       "Unknown",
-			KernelVersion: "Unknown",
+			Name:          gi.GoOS,
+			Version:       gi.OS,
+			KernelVersion: gi.Core,
 		}),
 		DeviceContext(&DeviceContextInfo{
-			Architecture: runtime.GOARCH,
-			Family:       "Unknown",
+			Architecture: gi.Platform,
+			Family:       gi.Kernel,
 			Model:        "Unknown",
 		}),
 	)
