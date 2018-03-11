@@ -1,9 +1,5 @@
 package sentry
 
-import (
-	"sync"
-)
-
 // A QueuedEvent allows you to track the status of sending
 // an event to Sentry.
 type QueuedEvent interface {
@@ -29,20 +25,18 @@ func NewQueuedEvent(cfg Config, packet Packet) QueuedEvent {
 	e := &queuedEvent{
 		cfg:    cfg,
 		packet: packet,
+		wait:   make(chan struct{}),
 	}
-
-	e.wait.Add(1)
 
 	return e
 }
 
 type queuedEvent struct {
-	cfg      Config
-	packet   Packet
-	complete bool
-	err      error
+	cfg    Config
+	packet Packet
+	err    error
 
-	wait sync.WaitGroup
+	wait chan struct{}
 }
 
 func (e *queuedEvent) EventID() string {
@@ -54,11 +48,7 @@ func (e *queuedEvent) EventID() string {
 }
 
 func (e *queuedEvent) Wait() QueuedEvent {
-	if e.complete {
-		return e
-	}
-
-	e.wait.Wait()
+	_, _ = <-e.wait
 
 	return e
 }
@@ -67,9 +57,7 @@ func (e *queuedEvent) WaitChannel() <-chan error {
 	ch := make(chan error)
 
 	go func() {
-		if !e.complete {
-			e.wait.Wait()
-		}
+		_, _ = <-e.wait
 
 		if e.err != nil {
 			ch <- e.err
@@ -93,11 +81,10 @@ func (e *queuedEvent) Config() Config {
 }
 
 func (e *queuedEvent) Complete(err error) {
-	if e.complete {
-		return
+	select {
+	case _, _ = <-e.wait:
+	default:
+		e.err = err
+		close(e.wait)
 	}
-
-	e.complete = true
-	e.err = err
-	e.wait.Done()
 }
