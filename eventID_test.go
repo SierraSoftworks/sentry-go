@@ -69,10 +69,21 @@ func TestEventID(t *testing.T) {
 
 		Convey("Packet Extensions", func() {
 			Convey("getEventID()", func() {
-				p := NewPacket().SetOptions(EventID(id))
-				pp := p.(*packet)
+				Convey("With an EventID", func() {
+					p := NewPacket().SetOptions(EventID(id))
+					pp, ok := p.(*packet)
+					So(ok, ShouldBeTrue)
 
-				So(pp.getEventID(), ShouldEqual, id)
+					So(pp.getEventID(), ShouldEqual, id)
+				})
+
+				Convey("Without an EventID", func() {
+					p := NewPacket()
+					pp, ok := p.(*packet)
+					So(ok, ShouldBeTrue)
+
+					So(pp.getEventID(), ShouldEqual, "")
+				})
 			})
 
 		})

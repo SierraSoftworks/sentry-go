@@ -64,7 +64,7 @@ func TestOptions(t *testing.T) {
 			id, err := NewEventID()
 			So(err, ShouldBeNil)
 
-			AddDefaultOptions(EventID(id), EventID(id))
+			AddDefaultOptions(EventID(id), nil, EventID(id))
 			So(defaultOptionProviders, ShouldHaveLength, 2)
 
 			for _, provider := range defaultOptionProviders {
