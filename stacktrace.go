@@ -1,5 +1,13 @@
 package sentry
 
+var defaultInternalPrefixes = []string{"main"}
+
+// AddInternalPrefixes allows you to easily add packages which will be considered
+// "internal" in your stack traces.
+func AddInternalPrefixes(prefixes ...string) {
+	defaultInternalPrefixes = append(defaultInternalPrefixes, prefixes...)
+}
+
 // StackTraceOption wraps a stacktrace and gives you tools for selecting
 // where it is sourced from or what is classified as an internal module.
 type StackTraceOption interface {
@@ -15,7 +23,7 @@ func StackTrace() StackTraceOption {
 		Frames:  getStacktraceFrames(0),
 		Omitted: []int{},
 
-		internalPrefixes: []string{},
+		internalPrefixes: defaultInternalPrefixes,
 	}
 }
 

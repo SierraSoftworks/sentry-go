@@ -7,6 +7,12 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func ExampleAddInternalPrefixes() {
+	// This adds the provided prefixes to your list of internal
+	// package prefixes used to tag stacktrace frames as in-app.
+	AddInternalPrefixes("github.com/SierraSoftworks/sentry-go")
+}
+
 func ExampleStackTrace() {
 	cl := NewClient()
 
@@ -27,6 +33,11 @@ func ExampleStackTrace() {
 
 func TestStackTrace(t *testing.T) {
 	Convey("StackTrace", t, func() {
+		Convey("AddInternalPrefixes()", func() {
+			AddInternalPrefixes("github.com/SierraSoftworks/sentry-go")
+			So(defaultInternalPrefixes, ShouldResemble, []string{"main", "github.com/SierraSoftworks/sentry-go"})
+		})
+
 		Convey("StackTrace()", func() {
 			Convey("Should return an Option", func() {
 				So(StackTrace(), ShouldImplement, (*Option)(nil))
@@ -46,7 +57,7 @@ func TestStackTrace(t *testing.T) {
 
 				sti, ok := st.(*stackTraceOption)
 				So(ok, ShouldBeTrue)
-				So(sti.internalPrefixes, ShouldResemble, []string{})
+				So(sti.internalPrefixes, ShouldResemble, defaultInternalPrefixes)
 
 				st.WithInternalPrefixes("github.com/SierraSoftworks/sentry-go")
 				st.WithInternalPrefixes("github.com/SierraSoftworks")
