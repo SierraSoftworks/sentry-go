@@ -25,7 +25,7 @@ of more advanced use cases, including sending events to multiple different Sentr
 DSNs, derived client contexts, custom interface types and custom transports.
 
 ## Versions
-This package follows SemVer and uses [gopkg.in]() to provide access
+This package follows SemVer and uses [gopkg.in](https://gopkg.in) to provide access
 to those versions.
 
  - [sentry-go.v0](https://gopkg.in/SierraSoftworks/sentry-go.v0) - `import ("gopkg.in/SierraSoftworks/sentry-go.v0")`
