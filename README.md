@@ -1,4 +1,4 @@
-# sentry-go [![Build Status](https://travis-ci.org/SierraSoftworks/sentry-go.svg?branch=master)](https://travis-ci.org/SierraSoftworks/sentry-go) [![](https://godoc.org/github.com/SierraSoftworks/sentry-go?status.svg)](http://godoc.org/github.com/SierraSoftworks/sentry-go) [![codecov](https://codecov.io/gh/SierraSoftworks/sentry-go/branch/master/graph/badge.svg)](https://codecov.io/gh/SierraSoftworks/sentry-go)
+# sentry-go [![Build Status](https://travis-ci.org/SierraSoftworks/sentry-go.svg?branch=master)](https://travis-ci.org/SierraSoftworks/sentry-go) [![](https://godoc.org/gopkg.in/SierraSoftworks/sentry-go.v1?status.svg)](http://godoc.org/gopkg.in/SierraSoftworks/sentry-go.v1) [![codecov](https://codecov.io/gh/SierraSoftworks/sentry-go/branch/master/graph/badge.svg)](https://codecov.io/gh/SierraSoftworks/sentry-go)
 **A robust Sentry client for Go applications**
 
 This library is a re-imagining of how Go applications should interact
@@ -24,6 +24,19 @@ In addition to the features listed above, the library offers support for a numbe
 of more advanced use cases, including sending events to multiple different Sentry
 DSNs, derived client contexts, custom interface types and custom transports.
 
+## Versions
+This package follows SemVer and uses [gopkg.in]() to provide access
+to those versions.
+
+ - [sentry-go.v0](https://gopkg.in/SierraSoftworks/sentry-go.v0) - `import ("gopkg.in/SierraSoftworks/sentry-go.v0")`
+
+   This version is the latest `master` branch. You should avoid depending on this version unless you
+   are performing active development against `sentry-go`.
+ - [**sentry-go.v1**](https://gopkg.in/SierraSoftworks/sentry-go.v1) - `import ("gopkg.in/SierraSoftworks/sentry-go.v1")`
+
+   This version is the most recent release of `sentry-go` and will maintain API compatibility. If you
+   are creating a project that relies on `sentry-go` then this is the version you should use.
+
 ## Examples
 
 ### Breadcrumbs and Exceptions
@@ -33,7 +46,7 @@ package main
 import (
     "fmt"
 
-    "github.com/SierraSoftworks/sentry-go"
+    "gopkg.in/SierraSoftworks/sentry-go.v1"
     "github.com/pkg/errors"
 )
 
@@ -65,7 +78,7 @@ import (
     "net/http"
     "os"
     
-    "github.com/SierraSoftworks/sentry-go"
+    "gopkg.in/SierraSoftworks/sentry-go.v1"
 )
 
 func main() {
@@ -117,7 +130,7 @@ between different clients to impose custom behaviour for different portions
 of your application.
 
 ```go
-import "github.com/SierraSoftworks/sentry-go"
+import "gopkg.in/SierraSoftworks/sentry-go.v1"
 
 func main() {
     // Configure a new global send queue
@@ -183,7 +196,7 @@ the `Merge()` method which allows you to control how your option behaves
 when it encounters another option with the same `Class()`.
 
 ```go
-import "github.com/SierraSoftworks/sentry-go"
+import "gopkg.in/SierraSoftworks/sentry-go.v1"
 
 func (i *myOption) Merge(old sentry.Option) sentry.Option {
     if old, ok := old.(*myOption); ok {
