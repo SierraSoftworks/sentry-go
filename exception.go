@@ -99,3 +99,13 @@ func (o *exceptionOption) Merge(old Option) Option {
 
 	return o
 }
+
+func (o *exceptionOption) Finalize() {
+	for _, ex := range o.Exceptions {
+		if ex.StackTrace != nil {
+			if finalize, ok := ex.StackTrace.(FinalizableOption); ok {
+				finalize.Finalize()
+			}
+		}
+	}
+}

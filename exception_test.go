@@ -48,6 +48,47 @@ func TestException(t *testing.T) {
 					So(mergable.Merge(&testOption{}), ShouldEqual, exo)
 				})
 			})
+
+			Convey("Finalize()", func() {
+				Convey("Should call finalize on all of its exception's stacktraces", func() {
+					err := errors.New("test error")
+					So(err, ShouldNotBeNil)
+
+					ex := ExceptionForError(err)
+					So(ex, ShouldNotBeNil)
+
+					exx, ok := ex.(*exceptionOption)
+					So(ok, ShouldBeTrue)
+
+					So(exx.Exceptions, ShouldHaveLength, 1)
+
+					st := exx.Exceptions[0].StackTrace
+					So(st, ShouldNotBeNil)
+					st.WithInternalPrefixes("github.com/SierraSoftworks/sentry-go")
+
+					sti, ok := st.(*stackTraceOption)
+					So(ok, ShouldBeTrue)
+					So(sti.Frames, ShouldNotBeEmpty)
+
+					hasInternal := false
+					for _, frame := range sti.Frames {
+						if frame.InApp {
+							hasInternal = true
+						}
+					}
+					So(hasInternal, ShouldBeFalse)
+
+					exx.Finalize()
+
+					hasInternal = false
+					for _, frame := range sti.Frames {
+						if frame.InApp {
+							hasInternal = true
+						}
+					}
+					So(hasInternal, ShouldBeTrue)
+				})
+			})
 		})
 
 		Convey("ExceptionForError()", func() {
