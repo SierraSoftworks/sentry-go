@@ -81,6 +81,14 @@ func (o *testOption) Class() string {
 	return "test"
 }
 
+type testCustomClassOption struct {
+	class string
+}
+
+func (o *testCustomClassOption) Class() string {
+	return o.class
+}
+
 type testOmitableOption struct {
 	omit bool
 }

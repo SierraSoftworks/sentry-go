@@ -7,12 +7,12 @@ type Client interface {
 	// set as part of its defaults.
 	With(options ...Option) Client
 
-	// UseSendQueue allows you to switch out the SendQueue implementation
-	// used by this client. It will be copied to all future derivative
-	// clients created using With().
-	// Specifying `nil` as your queue will tell this client to use the
-	// global DefaultSendQueue().
-	UseSendQueue(queue SendQueue) Client
+	// GetOption allows you to retrieve a specific configuration object
+	// by its Class name from this client. It is useful if you are interested
+	// in using the client to configure Sentry plugins.
+	// If an option with the given className could not be found, nil will
+	// be returned.
+	GetOption(className string) Option
 
 	// Capture will queue an event for sending to Sentry and return a
 	// QueuedEvent object which can be used to keep tabs on when it is
@@ -22,8 +22,8 @@ type Client interface {
 
 var defaultClient = NewClient()
 
-// The DefaultClient is a singleton client instance which can be configured
-// and used throughout your application.
+// DefaultClient is a singleton client instance which can be used instead
+// of instantiating a new client manually.
 func DefaultClient() Client {
 	return defaultClient
 }
@@ -31,7 +31,6 @@ func DefaultClient() Client {
 type client struct {
 	parent  *client
 	options []Option
-	queue   SendQueue
 }
 
 // NewClient will create a new client instance with the provided
@@ -45,35 +44,87 @@ func NewClient(options ...Option) Client {
 
 func (c *client) Capture(options ...Option) QueuedEvent {
 	p := NewPacket().SetOptions(c.fullDefaultOptions()...).SetOptions(options...)
-	conf := c.getConfig(options...)
 
-	return c.getQueue().Enqueue(conf, p)
+	return c.SendQueue().Enqueue(c, p)
 }
 
 func (c *client) With(options ...Option) Client {
 	return &client{
 		parent:  c,
 		options: options,
-
-		queue: nil,
 	}
 }
 
-func (c *client) UseSendQueue(queue SendQueue) Client {
-	c.queue = queue
-	return c
+func (c *client) GetOption(className string) Option {
+	var opt Option
+	for _, o := range c.fullDefaultOptions() {
+		if o == nil {
+			continue
+		}
+
+		if o.Class() != className {
+			continue
+		}
+
+		if mergeable, ok := o.(MergeableOption); ok {
+			opt = mergeable.Merge(opt)
+			continue
+		}
+
+		opt = o
+	}
+
+	return opt
 }
 
-func (c *client) getQueue() SendQueue {
-	if c.queue != nil {
-		return c.queue
+func (c *client) DSN() string {
+	opt := c.GetOption("sentry-go.dsn")
+	if opt == nil {
+		return ""
 	}
 
-	if c.parent == nil {
-		return DefaultSendQueue()
+	dsnOpt, ok := opt.(*dsnOption)
+	if !ok {
+		// Should never be the case unless someone implements a
+		// custom dsn option we don't know how to handle
+		return ""
 	}
 
-	return c.parent.getQueue()
+	return dsnOpt.dsn
+}
+
+func (c *client) Transport() Transport {
+	opt := c.GetOption("sentry-go.transport")
+	if opt == nil {
+		// Should never be the case, we have this set as a base default
+		return newHTTPTransport()
+	}
+
+	transOpt, ok := opt.(*transportOption)
+	if !ok {
+		// Should never be the case unless someone implements their own custom
+		// transport option that we don't know how to handle.
+		return newHTTPTransport()
+	}
+
+	return transOpt.transport
+}
+
+func (c *client) SendQueue() SendQueue {
+	opt := c.GetOption("sentry-go.sendqueue")
+	if opt == nil {
+		// Should never be the case, we have this set as a base default
+		return NewSequentialSendQueue(100)
+	}
+
+	sqOpt, ok := opt.(*sendQueueOption)
+	if !ok {
+		// Should never be the case unless someone implements their own custom
+		// sendqueue option that we don't know how to handle.
+		return NewSequentialSendQueue(100)
+	}
+
+	return sqOpt.queue
 }
 
 func (c *client) fullDefaultOptions() []Option {
@@ -90,15 +141,4 @@ func (c *client) fullDefaultOptions() []Option {
 	}
 
 	return append(c.parent.fullDefaultOptions(), c.options...)
-}
-
-func (c *client) getConfig(options ...Option) *configOption {
-	cnf := &configOption{}
-	for _, opt := range append(c.fullDefaultOptions(), options...) {
-		if oc, ok := opt.(*configOption); ok {
-			cnf = oc.Merge(cnf).(*configOption)
-		}
-	}
-
-	return cnf
 }

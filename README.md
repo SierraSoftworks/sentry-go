@@ -120,12 +120,18 @@ of your application.
 import "github.com/SierraSoftworks/sentry-go"
 
 func main() {
-    sentry.SetDefaultSendQueue(sentry.NewSequentialSendQueue(10))
+    // Configure a new global send queue
+    sentry.AddDefaultOptions(
+        sentry.UseSendQueue(sentry.NewSequentialSendQueue(10)),
+    )
 
     cl := sentry.NewClient()
     cl.Capture(sentry.Message("Sent over the global queue"))
 
-    cl2 := sentry.NewClient().UseSendQueue(sentry.NewSequentialSendQueue(100))
+    // Create a client with its own send queue
+    cl2 := sentry.NewClient(
+        UseSendQueue(sentry.NewSequentialSendQueue(100)),
+    )
     cl2.Capture(sentry.Message("Sent over the client's queue"))
 }
 ```

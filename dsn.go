@@ -17,9 +17,19 @@ func init() {
 // DSN lets you specify the unique Sentry DSN used to submit events for
 // your application. Specifying an empty DSN will disable the client.
 func DSN(dsn string) Option {
-	return &configOption{
-		dsn: &dsn,
-	}
+	return &dsnOption{dsn}
+}
+
+type dsnOption struct {
+	dsn string
+}
+
+func (o *dsnOption) Class() string {
+	return "sentry-go.dsn"
+}
+
+func (o *dsnOption) Omit() bool {
+	return true
 }
 
 const (

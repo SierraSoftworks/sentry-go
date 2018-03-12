@@ -24,34 +24,24 @@ func TestTransport(t *testing.T) {
 	Convey("Transport", t, func() {
 		Convey("UseTransport()", func() {
 			Convey("Should return an Option", func() {
-				So(UseTransport(newHTTPTransport()), ShouldImplement, (*Option)(nil))
-			})
-
-			Convey("Should return nil if the transport is nil", func() {
-				So(UseTransport(nil), ShouldBeNil)
-			})
-		})
-
-		Convey("DefaultTransport()", func() {
-			Convey("Should be defined from the start", func() {
-				So(DefaultTransport(), ShouldNotBeNil)
-			})
-
-			Convey("Should return the correct transport", func() {
-				So(DefaultTransport(), ShouldEqual, defaultTransport)
-			})
-		})
-
-		Convey("SetDefaultTransport()", func() {
-			Convey("Should allow you to change the default transport", func() {
 				t := newHTTPTransport()
-				SetDefaultTransport(t)
-				So(DefaultTransport(), ShouldEqual, t)
+				So(UseTransport(t), ShouldImplement, (*Option)(nil))
 			})
 
-			Convey("Should set the transport back to the default if nil is provided", func() {
-				SetDefaultTransport(nil)
-				So(DefaultTransport(), ShouldNotBeNil)
+			Convey("Should return nil if no queue is provided", func() {
+				So(UseTransport(nil), ShouldEqual, nil)
+			})
+
+			Convey("Should use the correct Class()", func() {
+				t := newHTTPTransport()
+				So(UseTransport(t).Class(), ShouldEqual, "sentry-go.transport")
+			})
+
+			Convey("Should implement Omit() and always return true", func() {
+				t := newHTTPTransport()
+				o := UseTransport(t)
+				So(o, ShouldImplement, (*OmitableOption)(nil))
+				So(o.(OmitableOption).Omit(), ShouldBeTrue)
 			})
 		})
 	})

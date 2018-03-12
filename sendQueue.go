@@ -17,34 +17,38 @@ type SendQueue interface {
 }
 
 const (
-	// The ErrSendQueueFull error is used when an attempt to enqueue a
+	// ErrSendQueueFull is used when an attempt to enqueue a
 	// new event fails as a result of no buffer space being available.
 	ErrSendQueueFull = ErrType("sentry: send queue was full")
 
-	// The ErrSendQueueShutdown error is used when an attempt to enqueue
+	// ErrSendQueueShutdown is used when an attempt to enqueue
 	// a new event fails as a result of the queue having been shutdown
 	// already.
 	ErrSendQueueShutdown = ErrType("sentry: send queue was shutdown")
 )
 
-var defaultSendQueue SendQueue
-
 func init() {
-	SetDefaultSendQueue(nil)
+	AddDefaultOptions(UseSendQueue(NewSequentialSendQueue(100)))
 }
 
-// The DefaultSendQueue is used by all clients which have not been configured
-// to use a specific send queue themselves.
-func DefaultSendQueue() SendQueue {
-	return defaultSendQueue
-}
-
-// SetDefaultSendQueue allows you to change the default queue implementation
-// used to send events to Sentry.
-func SetDefaultSendQueue(queue SendQueue) {
+// UseSendQueue allows you to specify the send queue that will be used
+// by a client.
+func UseSendQueue(queue SendQueue) Option {
 	if queue == nil {
-		queue = NewSequentialSendQueue(100)
+		return nil
 	}
 
-	defaultSendQueue = queue
+	return &sendQueueOption{queue}
+}
+
+type sendQueueOption struct {
+	queue SendQueue
+}
+
+func (o *sendQueueOption) Class() string {
+	return "sentry-go.sendqueue"
+}
+
+func (o *sendQueueOption) Omit() bool {
+	return true
 }

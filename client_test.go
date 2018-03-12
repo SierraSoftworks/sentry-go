@@ -97,23 +97,6 @@ func TestClient(t *testing.T) {
 			}
 		})
 
-		Convey("UseSendQueue()", func() {
-			Convey("Should set the client's queue", func() {
-				q := NewSequentialSendQueue(0)
-				So(q, ShouldNotBeNil)
-
-				cl := NewClient()
-				So(cl, ShouldNotBeNil)
-
-				cll, ok := cl.(*client)
-				So(ok, ShouldBeTrue)
-				So(cll.queue, ShouldBeNil)
-
-				So(cl.UseSendQueue(q), ShouldEqual, cl)
-				So(cll.queue, ShouldEqual, q)
-			})
-		})
-
 		Convey("With()", func() {
 			Convey("Should return a new Client", func() {
 				cl := NewClient()
@@ -148,6 +131,35 @@ func TestClient(t *testing.T) {
 				cll, ok := ctxCl.(*client)
 				So(ok, ShouldBeTrue)
 				So(cll.options, ShouldResemble, []Option{opt})
+			})
+		})
+
+		Convey("GetOption()", func() {
+			Convey("Should return nil for an unrecognized option", func() {
+				cl := NewClient()
+				So(cl.GetOption("unknown-option-class"), ShouldBeNil)
+			})
+
+			Convey("Should skip over nil options", func() {
+				cl := NewClient(nil)
+				So(cl.GetOption("unknown-option-class"), ShouldBeNil)
+			})
+
+			Convey("Should return the option if it is present", func() {
+				opt := &testOption{}
+				cl := NewClient(opt)
+				So(cl.GetOption("test"), ShouldEqual, opt)
+			})
+
+			Convey("Should return the most recent non-mergeable option", func() {
+				opt := &testOption{}
+				cl := NewClient(&testOption{}, opt)
+				So(cl.GetOption("test"), ShouldEqual, opt)
+			})
+
+			Convey("Should merge options when supported", func() {
+				cl := NewClient(&testMergeableOption{1}, &testMergeableOption{2})
+				So(cl.GetOption("test"), ShouldResemble, &testMergeableOption{3})
 			})
 		})
 
@@ -209,107 +221,244 @@ func TestClient(t *testing.T) {
 			})
 		})
 
-		Convey("getQueue", func() {
-			Convey("With no custom queue", func() {
-				cl := NewClient()
-				So(cl, ShouldNotBeNil)
+		Convey("Config Interface", func() {
+			Convey("DSN()", func() {
+				Convey("In a world with no DSNs", func() {
+					oldDefaultOptionProviders := defaultOptionProviders
+					defer func() {
+						defaultOptionProviders = oldDefaultOptionProviders
+					}()
 
-				cll, ok := cl.(*client)
-				So(ok, ShouldBeTrue)
-				So(cll.queue, ShouldBeNil)
+					defaultOptionProviders = []func() Option{}
+					cl := NewClient()
+					So(cl, ShouldNotBeNil)
 
-				So(cll.getQueue(), ShouldEqual, DefaultSendQueue())
+					cfg, ok := cl.(Config)
+					So(ok, ShouldBeTrue)
+					So(cfg.DSN(), ShouldEqual, "")
+				})
+
+				Convey("When someone has implemented their own custom DSN option", func() {
+					cl := NewClient(&testCustomClassOption{"sentry-go.dsn"})
+					So(cl, ShouldNotBeNil)
+
+					cfg, ok := cl.(Config)
+					So(ok, ShouldBeTrue)
+					So(cfg.DSN(), ShouldEqual, "")
+				})
+
+				Convey("With no custom DSN", func() {
+					cl := NewClient()
+					So(cl, ShouldNotBeNil)
+
+					cfg, ok := cl.(Config)
+					So(ok, ShouldBeTrue)
+
+					So(cfg.DSN(), ShouldEqual, "")
+				})
+
+				Convey("With a custom DSN", func() {
+					cl := NewClient(DSN("test"))
+					So(cl, ShouldNotBeNil)
+
+					cfg, ok := cl.(Config)
+					So(ok, ShouldBeTrue)
+
+					So(cfg.DSN(), ShouldEqual, "test")
+				})
+
+				Convey("With no custom DSN on a parent", func() {
+					cl := NewClient()
+					So(cl, ShouldNotBeNil)
+
+					dcl := cl.With()
+					So(dcl, ShouldNotBeNil)
+
+					cfg, ok := dcl.(Config)
+					So(ok, ShouldBeTrue)
+
+					So(cfg.DSN(), ShouldEqual, "")
+				})
+
+				Convey("With a custom DSN on a parent", func() {
+					cl := NewClient(DSN("test"))
+					So(cl, ShouldNotBeNil)
+
+					dcl := cl.With()
+					So(dcl, ShouldNotBeNil)
+
+					cfg, ok := dcl.(Config)
+					So(ok, ShouldBeTrue)
+					So(cfg.DSN(), ShouldEqual, "test")
+				})
 			})
 
-			Convey("With a custom queue", func() {
-				q := NewSequentialSendQueue(0)
-				So(q, ShouldNotBeNil)
+			Convey("SendQueue()", func() {
+				Convey("In a world with no SendQueues", func() {
+					oldDefaultOptionProviders := defaultOptionProviders
+					defer func() {
+						defaultOptionProviders = oldDefaultOptionProviders
+					}()
 
-				cl := NewClient()
-				So(cl, ShouldNotBeNil)
+					defaultOptionProviders = []func() Option{}
+					cl := NewClient()
+					So(cl, ShouldNotBeNil)
 
-				cl.UseSendQueue(q)
+					cfg, ok := cl.(Config)
+					So(ok, ShouldBeTrue)
 
-				cll, ok := cl.(*client)
-				So(ok, ShouldBeTrue)
-				So(cll.queue, ShouldEqual, q)
+					q := cfg.SendQueue()
+					So(q, ShouldNotBeNil)
+					So(q, ShouldHaveSameTypeAs, NewSequentialSendQueue(0))
+				})
 
-				So(cll.getQueue(), ShouldEqual, q)
+				Convey("When someone has implemented their own custom SendQueue option", func() {
+					cl := NewClient(&testCustomClassOption{"sentry-go.sendqueue"})
+					So(cl, ShouldNotBeNil)
+
+					cfg, ok := cl.(Config)
+					So(ok, ShouldBeTrue)
+
+					q := cfg.SendQueue()
+					So(q, ShouldNotBeNil)
+					So(q, ShouldHaveSameTypeAs, NewSequentialSendQueue(0))
+				})
+
+				Convey("With no custom queue", func() {
+					cl := NewClient()
+					So(cl, ShouldNotBeNil)
+
+					cfg, ok := cl.(Config)
+					So(ok, ShouldBeTrue)
+
+					So(cfg.SendQueue(), ShouldEqual, DefaultClient().GetOption("sentry-go.sendqueue").(*sendQueueOption).queue)
+				})
+
+				Convey("With a custom queue", func() {
+					q := NewSequentialSendQueue(0)
+					So(q, ShouldNotBeNil)
+
+					cl := NewClient(UseSendQueue(q))
+					So(cl, ShouldNotBeNil)
+
+					cfg, ok := cl.(Config)
+					So(ok, ShouldBeTrue)
+
+					So(cfg.SendQueue(), ShouldEqual, q)
+				})
+
+				Convey("With no custom queue on a parent", func() {
+					cl := NewClient()
+					So(cl, ShouldNotBeNil)
+
+					dcl := cl.With()
+					So(dcl, ShouldNotBeNil)
+
+					cfg, ok := dcl.(Config)
+					So(ok, ShouldBeTrue)
+
+					So(cfg.SendQueue(), ShouldEqual, DefaultClient().GetOption("sentry-go.sendqueue").(*sendQueueOption).queue)
+				})
+
+				Convey("With a custom queue on a parent", func() {
+					q := NewSequentialSendQueue(0)
+					So(q, ShouldNotBeNil)
+
+					cl := NewClient(UseSendQueue(q))
+					So(cl, ShouldNotBeNil)
+
+					dcl := cl.With()
+					So(dcl, ShouldNotBeNil)
+
+					cfg, ok := dcl.(Config)
+					So(ok, ShouldBeTrue)
+
+					So(cfg.SendQueue(), ShouldEqual, q)
+				})
 			})
 
-			Convey("With no custom queue on a parent", func() {
-				cl := NewClient()
-				So(cl, ShouldNotBeNil)
+			Convey("Transport()", func() {
+				Convey("In a world with no Transports", func() {
+					oldDefaultOptionProviders := defaultOptionProviders
+					defer func() {
+						defaultOptionProviders = oldDefaultOptionProviders
+					}()
 
-				dcl := cl.With()
-				So(dcl, ShouldNotBeNil)
+					defaultOptionProviders = []func() Option{}
+					cl := NewClient()
+					So(cl, ShouldNotBeNil)
 
-				cll, ok := dcl.(*client)
-				So(ok, ShouldBeTrue)
-				So(cll.queue, ShouldBeNil)
+					cfg, ok := cl.(Config)
+					So(ok, ShouldBeTrue)
 
-				So(cll.getQueue(), ShouldEqual, DefaultSendQueue())
-			})
+					t := cfg.Transport()
+					So(t, ShouldNotBeNil)
+					So(t, ShouldHaveSameTypeAs, newHTTPTransport())
+				})
 
-			Convey("With a custom queue on a parent", func() {
-				q := NewSequentialSendQueue(0)
-				So(q, ShouldNotBeNil)
+				Convey("When someone has implemented their own custom Transport option", func() {
+					cl := NewClient(&testCustomClassOption{"sentry-go.transport"})
+					So(cl, ShouldNotBeNil)
 
-				cl := NewClient()
-				So(cl, ShouldNotBeNil)
+					cfg, ok := cl.(Config)
+					So(ok, ShouldBeTrue)
 
-				cl.UseSendQueue(q)
+					t := cfg.Transport()
+					So(t, ShouldNotBeNil)
+					So(t, ShouldHaveSameTypeAs, newHTTPTransport())
+				})
 
-				dcl := cl.With()
-				So(dcl, ShouldNotBeNil)
+				Convey("With no custom transport", func() {
+					cl := NewClient()
+					So(cl, ShouldNotBeNil)
 
-				cll, ok := dcl.(*client)
-				So(ok, ShouldBeTrue)
-				So(cll.queue, ShouldBeNil)
+					cfg, ok := cl.(Config)
+					So(ok, ShouldBeTrue)
 
-				So(cll.getQueue(), ShouldEqual, q)
-			})
-		})
+					So(cfg.Transport(), ShouldEqual, DefaultClient().GetOption("sentry-go.transport").(*transportOption).transport)
+				})
 
-		Convey("getConfig()", func() {
-			Convey("Should return a config option", func() {
-				cl := NewClient()
-				So(cl, ShouldNotBeNil)
+				Convey("With a custom transport", func() {
+					t := newHTTPTransport()
+					So(t, ShouldNotBeNil)
 
-				cll, ok := cl.(*client)
-				So(ok, ShouldBeTrue)
+					cl := NewClient(UseTransport(t))
+					So(cl, ShouldNotBeNil)
 
-				So(cll.getConfig(), ShouldHaveSameTypeAs, &configOption{})
-			})
+					cfg, ok := cl.(Config)
+					So(ok, ShouldBeTrue)
 
-			Convey("Should include the most recent DSN", func() {
-				cl := NewClient(
-					DSN("old"),
-					DSN("new"),
-				)
-				So(cl, ShouldNotBeNil)
+					So(cfg.Transport(), ShouldEqual, t)
+				})
 
-				cll, ok := cl.(*client)
-				So(ok, ShouldBeTrue)
+				Convey("With no custom transport on a parent", func() {
+					cl := NewClient()
+					So(cl, ShouldNotBeNil)
 
-				cnf := cll.getConfig()
-				So(cnf, ShouldNotBeNil)
-				So(cnf.DSN(), ShouldEqual, "new")
-			})
+					dcl := cl.With()
+					So(dcl, ShouldNotBeNil)
 
-			Convey("Should allow options to be overridden by the event", func() {
-				cl := NewClient(
-					DSN("old"),
-					DSN("new"),
-				)
-				So(cl, ShouldNotBeNil)
+					cfg, ok := dcl.(Config)
+					So(ok, ShouldBeTrue)
 
-				cll, ok := cl.(*client)
-				So(ok, ShouldBeTrue)
+					So(cfg.Transport(), ShouldEqual, DefaultClient().GetOption("sentry-go.transport").(*transportOption).transport)
+				})
 
-				cnf := cll.getConfig(DSN("event"))
-				So(cnf, ShouldNotBeNil)
-				So(cnf.DSN(), ShouldEqual, "event")
+				Convey("With a custom transport on a parent", func() {
+					t := newHTTPTransport()
+					So(t, ShouldNotBeNil)
+
+					cl := NewClient(UseTransport(t))
+					So(cl, ShouldNotBeNil)
+
+					dcl := cl.With()
+					So(dcl, ShouldNotBeNil)
+
+					cfg, ok := dcl.(Config)
+					So(ok, ShouldBeTrue)
+
+					So(cfg.Transport(), ShouldEqual, t)
+				})
 			})
 		})
 	})

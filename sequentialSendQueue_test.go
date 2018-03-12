@@ -24,10 +24,13 @@ func TestSequentialSendQueue(t *testing.T) {
 			transport := testNewTestTransport()
 			So(transport, ShouldNotBeNil)
 
-			cfg := &configOption{
-				dsn:       &dsn,
-				transport: transport,
-			}
+			cl := NewClient(
+				DSN(dsn),
+				UseTransport(transport),
+			)
+
+			cfg, ok := cl.(Config)
+			So(ok, ShouldBeTrue)
 
 			Convey("Normal Operation", func() {
 				q := NewSequentialSendQueue(10)

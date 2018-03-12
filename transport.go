@@ -13,29 +13,21 @@ func UseTransport(transport Transport) Option {
 		return nil
 	}
 
-	return &configOption{
-		transport: transport,
-	}
+	return &transportOption{transport}
 }
-
-var defaultTransport Transport
 
 func init() {
-	defaultTransport = newHTTPTransport()
+	AddDefaultOptions(UseTransport(newHTTPTransport()))
 }
 
-// DefaultTransport retrieves the transport that will be used
-// by default for all new ClientQueues.
-func DefaultTransport() Transport {
-	return defaultTransport
+type transportOption struct {
+	transport Transport
 }
 
-// SetDefaultTransport allows you to change the transport that
-// is used by default for all new packets.
-func SetDefaultTransport(transport Transport) {
-	if transport == nil {
-		transport = newHTTPTransport()
-	}
+func (o *transportOption) Class() string {
+	return "sentry-go.transport"
+}
 
-	defaultTransport = transport
+func (o *transportOption) Omit() bool {
+	return true
 }

@@ -60,11 +60,12 @@ func TestQueuedEvent(t *testing.T) {
 		id, err := NewEventID()
 		So(err, ShouldBeNil)
 
-		dsn := ""
-		cfg := &configOption{
-			dsn:       &dsn,
-			transport: nil,
-		}
+		cl := NewClient(
+			DSN(""),
+		)
+
+		cfg, ok := cl.(Config)
+		So(ok, ShouldBeTrue)
 
 		p := NewPacket().SetOptions(EventID(id))
 
