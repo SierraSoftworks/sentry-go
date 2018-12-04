@@ -128,8 +128,7 @@ func TestHTTPTransport(t *testing.T) {
 
 			Convey("With a missing private key", func() {
 				err := t.Send("https://key@example.com/sentry/1", p)
-				So(err, ShouldNotBeNil)
-				So(ErrMissingPrivateKey.IsInstance(err), ShouldBeTrue)
+				So(err, ShouldBeNil)
 			})
 
 			Convey("When it cannot connect to the server", func() {

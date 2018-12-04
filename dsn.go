@@ -41,10 +41,6 @@ const (
 	// a valid public key contained within its URL
 	ErrMissingPublicKey = ErrType("sentry: missing public key")
 
-	// ErrMissingPrivateKey is returned when a DSN does not have
-	// a valid private key contained within its URL
-	ErrMissingPrivateKey = ErrType("sentry: missing private key")
-
 	// ErrMissingProjectID is returned when a DSN does not have a valid
 	// project ID contained within its URL
 	ErrMissingProjectID = ErrType("sentry: missing project ID")
@@ -72,7 +68,7 @@ func (d *dsn) AuthHeader() string {
 	}
 
 	if d.PrivateKey == "" {
-		return ""
+		return fmt.Sprintf("Sentry sentry_version=4, sentry_key=%s", d.PublicKey)
 	}
 
 	return fmt.Sprintf("Sentry sentry_version=4, sentry_key=%s, sentry_secret=%s", d.PublicKey, d.PrivateKey)
@@ -95,10 +91,9 @@ func (d *dsn) Parse(dsn string) error {
 	d.PublicKey = uri.User.Username()
 
 	privateKey, ok := uri.User.Password()
-	if !ok {
-		return errors.Wrap(fmt.Errorf("missing URL password"), ErrMissingPrivateKey.Error())
+	if ok {
+		d.PrivateKey = privateKey
 	}
-	d.PrivateKey = privateKey
 
 	uri.User = nil
 
