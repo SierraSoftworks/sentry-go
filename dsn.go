@@ -41,6 +41,11 @@ const (
 	// a valid public key contained within its URL
 	ErrMissingPublicKey = ErrType("sentry: missing public key")
 
+	// ErrMissingPrivateKey is returned when a DSN does not have
+	// a valid private key contained within its URL
+	// [DEPRECATED] error is never thrown since Sentry 9 has deprecated the secret key requirement
+	ErrMissingPrivateKey = ErrType("sentry: missing private key")
+
 	// ErrMissingProjectID is returned when a DSN does not have a valid
 	// project ID contained within its URL
 	ErrMissingProjectID = ErrType("sentry: missing project ID")
