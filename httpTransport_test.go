@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -129,7 +129,7 @@ func TestHTTPTransport(t *testing.T) {
 			Convey("With a missing private key", func() {
 				err := t.Send("https://key@example.com/sentry/1", p)
 				So(err, ShouldNotBeNil)
-				So(ErrMissingPrivateKey.IsInstance(err), ShouldBeTrue)
+				So(err.Error(), ShouldEqual, "got http status 404, expected 200")
 			})
 
 			Convey("When it cannot connect to the server", func() {

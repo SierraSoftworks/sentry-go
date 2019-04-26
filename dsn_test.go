@@ -30,7 +30,7 @@ func TestDSN(t *testing.T) {
 				{"With a valid URL", "https://u:p@example.com/sentry/1", nil},
 				{"With a badly formatted URL", ":", ErrBadURL},
 				{"Without a public key", "https://example.com/sentry/1", ErrMissingPublicKey},
-				{"Without a private key", "https://u@example.com/sentry/1", ErrMissingPrivateKey},
+				{"Without a private key", "https://u@example.com/sentry/1", nil},
 				{"Without a project ID", "https://u:p@example.com", ErrMissingProjectID},
 			}
 
@@ -60,7 +60,7 @@ func TestDSN(t *testing.T) {
 				d := &dsn{
 					PublicKey: "key",
 				}
-				So(d.AuthHeader(), ShouldEqual, "")
+				So(d.AuthHeader(), ShouldEqual, "Sentry sentry_version=4, sentry_key=key")
 			})
 
 			Convey("With valid keys", func() {
