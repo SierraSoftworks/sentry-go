@@ -131,6 +131,20 @@ func (o *testMergeableOption) Merge(other Option) Option {
 	return o
 }
 
+type testAdvancedOption struct {
+	data map[string]Option
+}
+
+func (o *testAdvancedOption) Class() string {
+	return "test"
+}
+
+func (o *testAdvancedOption) Apply(packet map[string]Option) {
+	for k, v := range o.data {
+		packet[k] = v
+	}
+}
+
 type testSerializableOption struct {
 	data string
 }

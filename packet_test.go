@@ -126,6 +126,20 @@ func TestPacket(t *testing.T) {
 					So(pi["test"], ShouldResemble, &testMergeableOption{data: 3})
 				})
 			})
+
+			Convey("Should use the Apply() function", func() {
+				opt := &testAdvancedOption{
+					data: map[string]Option{
+						"tested": Context("value", true),
+					},
+				}
+
+				p.SetOptions(opt)
+				So(pi, ShouldContainKey, "tested")
+				So(pi["tested"], ShouldResemble, Context("value", true))
+
+				So(pi, ShouldNotContainKey, opt.Class())
+			})
 		})
 
 		Convey("MarshalJSON", func() {
