@@ -44,7 +44,7 @@ func (e *ExceptionInfo) ForError(err error) *ExceptionInfo {
 
 	if m := errorMsgPattern.FindStringSubmatch(err.Error()); m != nil {
 		e.Module = m[1]
-		e.Value = m[2]
+		e.Type = m[2]
 	}
 
 	return e
@@ -58,11 +58,16 @@ func ExceptionForError(err error) Option {
 	for err != nil {
 		exceptions = append([]*ExceptionInfo{NewExceptionInfo().ForError(err)}, exceptions...)
 
-		if causer, ok := err.(interface {
+		switch e := err.(type) {
+		case interface {
 			Cause() error
-		}); ok {
-			err = causer.Cause()
-		} else {
+		}:
+			err = e.Cause()
+		case interface {
+			Unwrap() error
+		}:
+			err = e.Unwrap()
+		default:
 			err = nil
 		}
 	}
@@ -80,7 +85,7 @@ func Exception(info *ExceptionInfo) Option {
 	}
 }
 
-var errorMsgPattern = regexp.MustCompile(`\A(\w+): (.+)\z`)
+var errorMsgPattern = regexp.MustCompile(`\A(?:(\w+): )?([^:]+)`)
 
 type exceptionOption struct {
 	Exceptions []*ExceptionInfo `json:"values"`

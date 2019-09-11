@@ -134,6 +134,8 @@ func TestException(t *testing.T) {
 					ex := &ExceptionInfo{}
 					err := fmt.Errorf("example error")
 					So(ex.ForError(err), ShouldEqual, ex)
+					So(ex.Type, ShouldEqual, "example error")
+					So(ex.Module, ShouldEqual, "")
 					So(ex.Value, ShouldEqual, "example error")
 					So(ex.StackTrace, ShouldNotBeNil)
 				})
@@ -141,6 +143,8 @@ func TestException(t *testing.T) {
 				Convey("With a normal error", func() {
 					err := fmt.Errorf("example error")
 					So(ex.ForError(err), ShouldEqual, ex)
+					So(ex.Type, ShouldEqual, "example error")
+					So(ex.Module, ShouldEqual, "")
 					So(ex.Value, ShouldEqual, "example error")
 					So(ex.StackTrace, ShouldNotBeNil)
 				})
@@ -148,6 +152,8 @@ func TestException(t *testing.T) {
 				Convey("With a stacktraceable error", func() {
 					err := errors.New("example error")
 					So(ex.ForError(err), ShouldEqual, ex)
+					So(ex.Module, ShouldEqual, "")
+					So(ex.Type, ShouldEqual, "example error")
 					So(ex.Value, ShouldEqual, "example error")
 					So(ex.StackTrace, ShouldNotBeNil)
 				})
@@ -156,7 +162,8 @@ func TestException(t *testing.T) {
 					err := errors.New("test: example error")
 					So(ex.ForError(err), ShouldEqual, ex)
 					So(ex.Module, ShouldEqual, "test")
-					So(ex.Value, ShouldEqual, "example error")
+					So(ex.Type, ShouldEqual, "example error")
+					So(ex.Value, ShouldEqual, "test: example error")
 				})
 			})
 		})
