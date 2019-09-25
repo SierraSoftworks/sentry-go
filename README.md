@@ -34,6 +34,12 @@ to those versions.
    are performing active development against `sentry-go`.
  - [**sentry-go.v1**](https://gopkg.in/SierraSoftworks/sentry-go.v1) - `import ("gopkg.in/SierraSoftworks/sentry-go.v1")`
 
+   This version of `sentry-go` maintains API compatibility with the package's v1 API. If you used
+   `sentry-go` for a project prior to 2019-09-25 then this is the version you should retain until
+   you can update your code. It will receive bug and security fixes.
+
+ - [**sentry-go.v2**](https://gopkg.in/SierraSoftworks/sentry-go.v2) - `import ("gopkg.in/SierraSoftworks/sentry-go.v2")`
+
    This version is the most recent release of `sentry-go` and will maintain API compatibility. If you
    are creating a project that relies on `sentry-go` then this is the version you should use.
 
@@ -46,7 +52,7 @@ package main
 import (
     "fmt"
 
-    "gopkg.in/SierraSoftworks/sentry-go.v1"
+    "gopkg.in/SierraSoftworks/sentry-go.v2"
     "github.com/pkg/errors"
 )
 
@@ -78,7 +84,7 @@ import (
     "net/http"
     "os"
     
-    "gopkg.in/SierraSoftworks/sentry-go.v1"
+    "gopkg.in/SierraSoftworks/sentry-go.v2"
 )
 
 func main() {
@@ -130,7 +136,7 @@ between different clients to impose custom behaviour for different portions
 of your application.
 
 ```go
-import "gopkg.in/SierraSoftworks/sentry-go.v1"
+import "gopkg.in/SierraSoftworks/sentry-go.v2"
 
 func main() {
     // Configure a new global send queue
