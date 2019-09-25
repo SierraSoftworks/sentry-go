@@ -13,7 +13,6 @@ import (
 	"strings"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -74,7 +73,7 @@ func TestHTTPTransport(t *testing.T) {
 				"Sentry sentry_version=4, sentry_key=key, sentry_secret=secret",
 				"Sentry sentry_version=4, sentry_key=key",
 			}, req.Header.Get("X-Sentry-Auth"), "it should use the right auth header")
-			
+
 			expectedData := testSerializePacket(t, p)
 
 			data := deserializePacket(t, req.Header.Get("Content-Type"), req.Body)
@@ -95,25 +94,25 @@ func TestHTTPTransport(t *testing.T) {
 
 			uri.Path = "/1"
 
-			return uri.String()	
+			return uri.String()
 		}
 
-		cases := []struct{
-			Name string
-			Packet Packet
-			DSN string
+		cases := []struct {
+			Name       string
+			Packet     Packet
+			DSN        string
 			StatusCode int
-			Error error
-			Received bool
+			Error      error
+			Received   bool
 		}{
-			{ "Short Packet", NewPacket(), makeDSN("key", "secret"), 200, nil, true },
-			{ "Long Packet", NewPacket().SetOptions(longMessage(10000)), makeDSN("key", "secret"), 200, nil, true },
-			{ "No DSN", NewPacket(), "", 200, nil, false },
-			{ "Invalid DSN URL", NewPacket(), ":", 400, ErrBadURL, false },
-			{ "Missing Public Key", NewPacket(), makeDSN("", ""), 401, ErrMissingPublicKey, false },
-			{ "Invalid Server", NewPacket(), "https://key:secret@invalid_domain.not_a_tld/sentry/1", 404, ErrType("failed to submit request"), false },
-			{ "Missing Private Key with Required Key", NewPacket(), makeDSN("key", ""), 401, fmt.Errorf("got http status 401, expected 200"), true },
-			{ "Missing Private Key", NewPacket(), makeDSN("key", ""), 200, nil, true },
+			{"Short Packet", NewPacket(), makeDSN("key", "secret"), 200, nil, true},
+			{"Long Packet", NewPacket().SetOptions(longMessage(10000)), makeDSN("key", "secret"), 200, nil, true},
+			{"No DSN", NewPacket(), "", 200, nil, false},
+			{"Invalid DSN URL", NewPacket(), ":", 400, ErrBadURL, false},
+			{"Missing Public Key", NewPacket(), makeDSN("", ""), 401, ErrMissingPublicKey, false},
+			{"Invalid Server", NewPacket(), "https://key:secret@invalid_domain.not_a_tld/sentry/1", 404, ErrType("failed to submit request"), false},
+			{"Missing Private Key with Required Key", NewPacket(), makeDSN("key", ""), 401, fmt.Errorf("got http status 401, expected 200"), true},
+			{"Missing Private Key", NewPacket(), makeDSN("key", ""), 200, nil, true},
 		}
 
 		for _, tc := range cases {
@@ -143,9 +142,9 @@ func TestHTTPTransport(t *testing.T) {
 	})
 
 	t.Run("serializePacket()", func(t *testing.T) {
-		cases := []struct{
-			Name string
-			Packet Packet
+		cases := []struct {
+			Name     string
+			Packet   Packet
 			DataType string
 		}{
 			{"Short Packet", NewPacket().SetOptions(Message("short packet")), "application/json; charset=utf8"},
@@ -166,12 +165,12 @@ func TestHTTPTransport(t *testing.T) {
 	})
 
 	t.Run("parseDSN()", func(t *testing.T) {
-		cases := []struct{
-			Name string
-			DSN string
-			URL string
+		cases := []struct {
+			Name       string
+			DSN        string
+			URL        string
 			AuthHeader string
-			Error error
+			Error      error
 		}{
 			{"Empty DSN", "", "", "", nil},
 			{"Invalid DSN", "@", "", "", fmt.Errorf("sentry: missing public key: missing URL user")},
@@ -197,9 +196,6 @@ func TestHTTPTransport(t *testing.T) {
 	// to confirm that this library functions correctly.
 	if liveTestDSN := os.Getenv("SENTRY_DSN"); liveTestDSN != "" {
 		t.Run("Live Test", func(t *testing.T) {
-			log.SetLevel(log.DebugLevel)
-			defer log.SetLevel(log.InfoLevel)
-
 			p := NewPacket().SetOptions(
 				Message("Ran Live Test"),
 				Release(version),
