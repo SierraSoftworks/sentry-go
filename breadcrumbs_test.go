@@ -214,6 +214,21 @@ func TestBreadcrumbs(t *testing.T) {
 						"index": 2,
 					})
 				})
+
+				Convey("Should empty the list if the size is set to 0", func() {
+					var b Breadcrumb
+					for i := 0; i < 3; i++ {
+						b = l.NewDefault(map[string]interface{}{
+							"index": i,
+						})
+						So(b, ShouldNotBeNil)
+					}
+
+					l.WithSize(0).WithSize(3)
+					So(ll.Length, ShouldEqual, 0)
+					So(ll.Head, ShouldBeNil)
+					So(ll.Tail, ShouldBeNil)
+				})
 			})
 
 			Convey("append()", func() {
