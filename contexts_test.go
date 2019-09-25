@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleRuntimeContext() {
@@ -60,149 +60,121 @@ func ExampleDeviceContext() {
 	)
 }
 
-func TestContexts(t *testing.T) {
-	Convey("Contexts", t, func() {
-		Convey("RuntimeContext()", func() {
-			Convey("Should return a context option", func() {
-				So(RuntimeContext("go", runtime.Version()), ShouldHaveSameTypeAs, Context("runtime", nil))
-			})
+func TestRuntimeContext(t *testing.T) {
+	c := RuntimeContext("go", runtime.Version())
 
-			Convey("Should set the context type to 'runtime'", func() {
-				c := RuntimeContext("go", runtime.Version())
-				cc, ok := c.(*contextOption)
-				So(ok, ShouldBeTrue)
-				So(cc.contexts, ShouldContainKey, "runtime")
-			})
+	assert.NotNil(t, c, "it should not return a nil option")
+	assert.IsType(t, Context("runtime", nil), c, "it should return the same thing as a Context()")
+	
+	cc, ok := c.(*contextOption)
+	assert.True(t, ok, "it should actually return a *contextOption")
+	if assert.Contains(t, cc.contexts, "runtime", "it should specify a runtime context") {
+		assert.Equal(t, map[string]string{
+			"name": "go",
+			"version": runtime.Version(),
+		}, cc.contexts["runtime"], "it should specify the correct context values")
+	}
+}
 
-			Convey("Should set the context correctly", func() {
-				c := RuntimeContext("go", runtime.Version())
-				cc, ok := c.(*contextOption)
-				So(ok, ShouldBeTrue)
-				So(cc.contexts["runtime"], ShouldResemble, map[string]string{
-					"name":    "go",
-					"version": runtime.Version(),
-				})
-			})
+func TestOSContext(t *testing.T) {
+	osInfo := OSContextInfo{
+		Version:       "CentOS 7.3",
+		Build:         "centos7.3.1611",
+		KernelVersion: "3.10.0-514",
+		Rooted:        false,
+	}
+
+	c := OSContext(&osInfo)
+
+	assert.NotNil(t, c, "it should not return a nil option")
+	assert.IsType(t, Context("os", nil), c, "it should return the same thing as a Context()")
+	
+	cc, ok := c.(*contextOption)
+	assert.True(t, ok, "it should actually return a *contextOption")
+	if assert.Contains(t, cc.contexts, "os", "it should specify an os context") {
+		assert.Equal(t, &osInfo, cc.contexts["os"], "it should specify the correct context values")
+	}
+}
+
+func TestDeviceContext(t *testing.T) {
+	deviceInfo := DeviceContextInfo{
+		Architecture: "arm",
+		BatteryLevel: 100,
+		Family:       "Samsung Galaxy",
+		Model:        "Samsung Galaxy S8",
+		ModelID:      "SM-G95550",
+		Name:         "Samsung Galaxy S8",
+		Orientation:  "portrait",
+	}
+
+	c := DeviceContext(&deviceInfo)
+
+	assert.NotNil(t, c, "it should not return a nil option")
+	assert.IsType(t, Context("device", nil), c, "it should return the same thing as a Context()")
+	
+	cc, ok := c.(*contextOption)
+	assert.True(t, ok, "it should actually return a *contextOption")
+	if assert.Contains(t, cc.contexts, "device", "it should specify an os context") {
+		assert.Equal(t, &deviceInfo, cc.contexts["device"], "it should specify the correct context values")
+	}
+}
+
+func TestContext(t *testing.T) {
+	c := Context("test", "data")
+	assert.NotNil(t, c, "it should not return a nil option")
+	assert.IsType(t, &contextOption{}, c, "it should actually return a *contextOption")
+
+	cc := c.(*contextOption)
+	assert.Contains(t, cc.contexts, "test", "it should set the 'test' context")
+	assert.Equal(t, "data", cc.contexts["test"], "it should set the context data correctly")
+}
+
+func TestContextOption(t *testing.T) {
+	c := Context("test", "data")
+	assert.NotNil(t, c, "it should not return a nil option")
+	
+	assert.IsType(t, &contextOption{}, c, "it should actually return a *contextOption")
+	cc := c.(*contextOption)
+
+	assert.Equal(t, "contexts", c.Class(), "it should use the right option class")
+	assert.Implements(t, (*MergeableOption)(nil), c, "it should implement the MergeableOption interface")
+
+	t.Run("Merge()", func(t *testing.T) {
+		t.Run("Unknown Type", func(t *testing.T) {
+			out := cc.Merge(&testOption{})
+			assert.Equal(t, c, out, "it should overwrite the original value")
 		})
+		
+		t.Run("Existing Context", func(t *testing.T) {
+			old := Context("test", "oldData")
+			out := cc.Merge(old)
 
-		Convey("OSContext()", func() {
-			osInfo := OSContextInfo{
-				Version:       "CentOS 7.3",
-				Build:         "centos7.3.1611",
-				KernelVersion: "3.10.0-514",
-				Rooted:        false,
-			}
-
-			Convey("Should return a context option", func() {
-				So(OSContext(&osInfo), ShouldHaveSameTypeAs, Context("os", nil))
-			})
-
-			Convey("Should set the context type to 'os'", func() {
-				c := OSContext(&osInfo)
-				cc, ok := c.(*contextOption)
-				So(ok, ShouldBeTrue)
-				So(cc.contexts, ShouldContainKey, "os")
-			})
-
-			Convey("Should set the context correctly", func() {
-				c := OSContext(&osInfo)
-				cc, ok := c.(*contextOption)
-				So(ok, ShouldBeTrue)
-				So(cc.contexts["os"], ShouldResemble, &osInfo)
-			})
+			assert.NotNil(t, out, "it should not return a nil result")
+			assert.IsType(t, &contextOption{}, out, "it should return a new *contextOption")
+			
+			oo := out.(*contextOption)
+			assert.Equal(t, map[string]interface{}{
+				"test": "data",
+			}, oo.contexts)
 		})
+		
+		t.Run("Existing Different Context", func(t *testing.T) {
+			old := Context("old", "oldData")
+			out := cc.Merge(old)
 
-		Convey("DeviceContext()", func() {
-			deviceInfo := DeviceContextInfo{
-				Architecture: "arm",
-				BatteryLevel: 100,
-				Family:       "Samsung Galaxy",
-				Model:        "Samsung Galaxy S8",
-				ModelID:      "SM-G95550",
-				Name:         "Samsung Galaxy S8",
-				Orientation:  "portrait",
-			}
-
-			Convey("Should return a context option", func() {
-				So(DeviceContext(&deviceInfo), ShouldHaveSameTypeAs, Context("device", nil))
-			})
-
-			Convey("Should set the context type to 'device'", func() {
-				c := DeviceContext(&deviceInfo)
-				cc, ok := c.(*contextOption)
-				So(ok, ShouldBeTrue)
-				So(cc.contexts, ShouldContainKey, "device")
-			})
-
-			Convey("Should set the context correctly", func() {
-				c := DeviceContext(&deviceInfo)
-				cc, ok := c.(*contextOption)
-				So(ok, ShouldBeTrue)
-				So(cc.contexts["device"], ShouldResemble, &deviceInfo)
-			})
+			assert.NotNil(t, out, "it should not return a nil result")
+			assert.IsType(t, &contextOption{}, out, "it should return a new *contextOption")
+			
+			oo := out.(*contextOption)
+			assert.Equal(t, map[string]interface{}{
+				"test": "data",
+				"old": "oldData",
+			}, oo.contexts)
 		})
+	})
 
-		Convey("Context()", func() {
-			c := Context("test", "data")
-			So(c, ShouldNotBeNil)
-			So(c, ShouldHaveSameTypeAs, &contextOption{})
-
-			cc := c.(*contextOption)
-			So(cc.contexts, ShouldContainKey, "test")
-			So(cc.contexts["test"], ShouldEqual, "data")
-		})
-
-		Convey("ContextOption", func() {
-			c := Context("test", "data")
-			So(c, ShouldNotBeNil)
-
-			Convey("Should have the correct Class()", func() {
-				So(c.Class(), ShouldEqual, "contexts")
-			})
-
-			Convey("Should implement MergableOption interface", func() {
-				So(c, ShouldImplement, (*MergeableOption)(nil))
-			})
-
-			Convey("Merge()", func() {
-				cc, ok := c.(*contextOption)
-				So(ok, ShouldBeTrue)
-
-				Convey("Should overwrite if it cannot identify the old type", func() {
-					out := cc.Merge(&testOption{})
-					So(out, ShouldEqual, c)
-				})
-
-				Convey("Should overwriting old fields", func() {
-					old := Context("test", "oldData")
-					out := cc.Merge(old)
-					So(out, ShouldNotBeNil)
-					So(out, ShouldHaveSameTypeAs, &contextOption{})
-
-					So(out.(*contextOption).contexts, ShouldResemble, map[string]interface{}{
-						"test": "data",
-					})
-				})
-
-				Convey("Should add new fields", func() {
-					old := Context("old", "data")
-					out := cc.Merge(old)
-					So(out, ShouldNotBeNil)
-					So(out, ShouldHaveSameTypeAs, &contextOption{})
-
-					So(out.(*contextOption).contexts, ShouldResemble, map[string]interface{}{
-						"old":  "data",
-						"test": "data",
-					})
-				})
-			})
-
-			Convey("MarshalJSON", func() {
-				c := Context("test", "data")
-				So(testOptionsSerialize(c), ShouldResemble, map[string]interface{}{
-					"test": "data",
-				})
-			})
-		})
+	t.Run("MarshalJSON()", func(t *testing.T) {
+		c := Context("test", "data")
+		assert.Equal(t, map[string]interface{}{ "test": "data" }, testOptionsSerialize(t, c))
 	})
 }

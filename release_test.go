@@ -1,10 +1,9 @@
 package sentry
 
 import (
-	"encoding/json"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleRelease() {
@@ -20,21 +19,12 @@ func ExampleRelease() {
 }
 
 func TestRelease(t *testing.T) {
-	Convey("Release", t, func() {
-		Convey("Release()", func() {
-			Convey("Should use the correct Class()", func() {
-				So(Release("test").Class(), ShouldEqual, "release")
-			})
+	o := Release("test")
+	assert.NotNil(t, o, "should not return a nil option")
+	assert.Implements(t, (*Option)(nil), o, "it should implement the Option interface")
+	assert.Equal(t, "release", o.Class(), "it should use the right option class")
 
-			Convey("MarshalJSON", func() {
-				Convey("Should marshal to a string", func() {
-					Convey("Should marshal to a string", func() {
-						b, err := json.Marshal(Release("test"))
-						So(err, ShouldBeNil)
-						So(string(b), ShouldEqual, `"test"`)
-					})
-				})
-			})
-		})
+	t.Run("MarshalJSON()", func(t *testing.T) {
+		assert.Equal(t, "test", testOptionsSerialize(t, o), "it should serialize to a string")
 	})
 }

@@ -6,102 +6,105 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStackTraceGenerator(t *testing.T) {
-	Convey("StackTrace Generator", t, func() {
-		Convey("ForError", func() {
-			Convey("With .StackTrace()", func() {
-				err := errors.New("test error")
-				frames := getStacktraceFramesForError(err)
-				So(frames.Len(), ShouldBeGreaterThan, 0)
-				So(frames[frames.Len()-1].Function, ShouldEqual, "TestStackTraceGenerator.func1.1.1")
-			})
-
-			Convey("Without .StackTrace()", func() {
-				err := fmt.Errorf("test error")
-				frames := getStacktraceFramesForError(err)
-				So(frames.Len(), ShouldEqual, 0)
-			})
+	t.Run("getStacktraceFramesForError()", func(t *testing.T) {
+		t.Run("StackTraceableError", func(t *testing.T) {
+			err := errors.New("test error")
+			frames := getStacktraceFramesForError(err)
+			if assert.NotEmpty(t, frames, "there should be frames from the error") {
+				assert.Equal(t, "TestStackTraceGenerator.func1.1", frames[frames.Len()-1].Function, "it should have the right function name as the top-most frame")
+			}
 		})
 
-		Convey("ForCurrentContext", func() {
-			Convey("For the current function", func() {
-				frames := getStacktraceFrames(0)
-				So(frames.Len(), ShouldBeGreaterThan, 3)
-				So(frames[frames.Len()-1].Function, ShouldEqual, "TestStackTraceGenerator.func1.2.1")
-			})
+		t.Run("error", func(t *testing.T) {
+			err := fmt.Errorf("test error")
+			frames := getStacktraceFramesForError(err)
+			assert.Empty(t, frames, "there should be no frames from a normal error")
+		})
+	})
 
-			Convey("With an extreme skip", func() {
-				frames := getStacktraceFrames(999999999)
-				So(frames.Len(), ShouldEqual, 0)
-			})
+	t.Run("getStacktraceFrames()", func(t *testing.T) {
+		t.Run("Skip", func(t *testing.T) {
+			frames := getStacktraceFrames(999999999)
+			assert.Empty(t, frames, "with an extreme skip, there should be no frames")
 		})
 
-		Convey("getStacktraceFrame()", func() {
-			pc, file, line, ok := runtime.Caller(0)
-			So(ok, ShouldBeTrue)
-
-			frame := getStacktraceFrame(pc)
-			So(frame, ShouldNotBeNil)
-			So(frame.AbsoluteFilename, ShouldEqual, file)
-			So(frame.Line, ShouldEqual, line)
-
-			So(frame.Filename, ShouldEqual, "github.com/SierraSoftworks/sentry-go/stacktraceGen_test.go")
-			So(frame.Function, ShouldStartWith, "TestStackTraceGenerator.func1.3")
-			So(frame.Module, ShouldEqual, "sentry-go")
-			So(frame.Package, ShouldEqual, "github.com/SierraSoftworks/sentry-go")
+		t.Run("Current Function", func(t *testing.T) {
+			frames := getStacktraceFrames(0)
+			if assert.NotEmpty(t, frames, "there should be frames from the current function") {
+				assert.Equal(t, "TestStackTraceGenerator.func2.2", frames[frames.Len()-1].Function, "it should have the right function name as the top-most frame")
+			}
 		})
+	})
 
-		Convey("stacktraceFrame", func() {
-			Convey("ClassifyInternal", func() {
-				frames := getStacktraceFrames(0)
-				So(frames.Len(), ShouldBeGreaterThan, 3)
+	t.Run("getStackTraceFrame()", func(t *testing.T) {
+		pc, file, line, ok := runtime.Caller(0)
+		require.True(t, ok, "we should be able to get the current caller")
 
-				for _, frame := range frames {
-					frame.ClassifyInternal([]string{"github.com/SierraSoftworks/sentry-go"})
-				}
+		frame := getStacktraceFrame(pc)
+		require.NotNil(t, frame, "the frame should not be nil")
 
-				So(frames[frames.Len()-1].InApp, ShouldBeTrue)
-				So(frames[0].InApp, ShouldBeFalse)
+		assert.Equal(t, file, frame.AbsoluteFilename, "the filename for the frame should match the caller")
+		assert.Equal(t, line, frame.Line, "the line from the frame should match the caller")
+
+		assert.Equal(t, "github.com/SierraSoftworks/sentry-go/stacktraceGen_test.go", frame.Filename, "it should have the correct filename")
+		assert.Equal(t, "TestStackTraceGenerator.func3", frame.Function, "it should have the correct function name")
+		assert.Equal(t, "sentry-go", frame.Module, "it should have the correct module name")
+		assert.Equal(t, "github.com/SierraSoftworks/sentry-go", frame.Package, "it should have the correct package name")
+	})
+
+	t.Run("stackTraceFrame.ClassifyInternal()", func(t *testing.T) {
+		frames := getStacktraceFrames(0)
+		require.Greater(t, frames.Len(), 3, "the number of frames should be more than 3")
+
+		for i, frame := range frames {
+			assert.False(t, frame.InApp, "all frames should initially be marked as external (frame index = %d)", i)
+			frame.ClassifyInternal([]string{"github.com/SierraSoftworks/sentry-go"})
+		}
+
+		assert.True(t, frames[frames.Len()-1].InApp, "the top-most frame should be marked as internal (this function)")
+		assert.False(t, frames[0].InApp, "the bottom-most frame should be marked as external (the test harness main method)")
+	})
+
+	t.Run("formatFuncName()", func(t *testing.T) {
+		cases := []struct {
+			Name string
+
+			FullName     string
+			Package      string
+			Module       string
+			FunctionName string
+		}{
+			{"Full Name", "github.com/SierraSoftworks/sentry-go.Context", "github.com/SierraSoftworks/sentry-go", "sentry-go", "Context"},
+			{"Struct Function Name", "github.com/SierraSoftworks/sentry-go.packet.Clone", "github.com/SierraSoftworks/sentry-go", "sentry-go", "packet.Clone"},
+			{"No Package", "sentry-go.Context", "sentry-go", "sentry-go", "Context"},
+		}
+
+		for _, tc := range cases {
+			tc := tc
+			t.Run(tc.Name, func(t *testing.T) {
+				pack, module, name := formatFuncName(tc.FullName)
+				assert.Equal(t, tc.Package, pack, "the package name should be correct")
+				assert.Equal(t, tc.Module, module, "the module name should be correct")
+				assert.Equal(t, tc.FunctionName, name, "the function name should be correct")
 			})
-		})
+		}
+	})
 
-		Convey("formatFuncName()", func() {
-			Convey("With a full package name", func() {
-				pack, module, name := formatFuncName("github.com/SierraSoftworks/sentry-go.Context")
-				So(pack, ShouldEqual, "github.com/SierraSoftworks/sentry-go")
-				So(module, ShouldEqual, "sentry-go")
-				So(name, ShouldEqual, "Context")
-			})
-
-			Convey("With no package", func() {
-				pack, module, name := formatFuncName("sentry-go.Context")
-				So(pack, ShouldEqual, "sentry-go")
-				So(module, ShouldEqual, "sentry-go")
-				So(name, ShouldEqual, "Context")
-			})
-		})
-
-		Convey("shortFilename()", func() {
+	t.Run("shortFilename()", func(t *testing.T) {
+		t.Run("GOPATH", func(t *testing.T) {
 			GOPATH := "/go/src"
 			pkg := "github.com/SierraSoftworks/sentry-go"
 			file := "stacktraceGen_test.go"
 			filename := fmt.Sprintf("%s/%s/%s", GOPATH, pkg, file)
 
-			Convey("With no package", func() {
-				So(shortFilename(filename, ""), ShouldEqual, filename)
-			})
-
-			Convey("With a valid package path", func() {
-				So(shortFilename(filename, pkg), ShouldEqual, fmt.Sprintf("%s/%s", pkg, file))
-			})
-
-			Convey("With an invalid package path", func() {
-				So(shortFilename(filename, "cithub.com/SierraSoftworks/bender"), ShouldEqual, filename)
-			})
+			assert.Equal(t, filename, shortFilename(filename, ""), "should use the original filename if no package is provided")
+			assert.Equal(t, filename, shortFilename(filename, "bitblob.com/bender"), "should use the original filename if the package name doesn't match the path")
+			assert.Equal(t, fmt.Sprintf("%s/%s", pkg, file), shortFilename(filename, pkg), "should use the $pkg/$file if the package is provided")
 		})
 	})
 }

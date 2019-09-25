@@ -1,10 +1,9 @@
 package sentry
 
 import (
-	"encoding/json"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleUnset() {
@@ -21,32 +20,23 @@ func ExampleUnset() {
 }
 
 func TestUnset(t *testing.T) {
-	Convey("Unset", t, func() {
-		Convey("Unset()", func() {
-			Convey("Should use the correct Class()", func() {
-				So(Unset("runtime").Class(), ShouldEqual, "runtime")
-				So(Unset("device").Class(), ShouldEqual, "device")
-			})
+	o := Unset("runtime")
+	assert.Equal(t, o.Class(), "runtime", "it should use the correct class name")
 
-			Convey("MarshalJSON", func() {
-				Convey("Should marshal to null", func() {
-					b, err := json.Marshal(Unset("runtime"))
-					So(err, ShouldBeNil)
-					So(string(b), ShouldEqual, `null`)
-				})
-			})
-		})
-
-		Convey("Should implement the advanced option interface", func() {
-			So(Unset("runtime"), ShouldImplement, (*AdvancedOption)(nil))
-		})
-
-		Convey("Should correctly unset fields from the packet", func() {
-			p := map[string]Option{}
-			p["level"] = Level(Error)
-			Unset("level").(AdvancedOption).Apply(p)
-
-			So(p, ShouldResemble, map[string]Option{})
-		})
+	o = Unset("device")
+	assert.Equal(t, o.Class(), "device", "it should use the correct class name")
+	
+	t.Run("MarshalJSON()", func(t *testing.T) {
+		assert.Equal(t, nil, testOptionsSerialize(t, o), "it should serialize to nil")
 	})
+
+	if assert.Implements(t, (*AdvancedOption)(nil), o, "it should implement the AdvancedOption interface") {
+		p := map[string]Option{
+			"level": Level(Error),
+			"release": Release("1.0.0"),
+		}
+
+		Unset("level").(AdvancedOption).Apply(p)
+		assert.NotContains(t, "level", p, "it should remove the property from the packet")
+	}
 }

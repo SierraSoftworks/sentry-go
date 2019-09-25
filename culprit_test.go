@@ -3,7 +3,7 @@ package sentry
 import (
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleCulprit() {
@@ -19,19 +19,8 @@ func ExampleCulprit() {
 }
 
 func TestCulprit(t *testing.T) {
-	Convey("Culprit", t, func() {
-		Convey("Culprit()", func() {
-			Convey("Should return an Option", func() {
-				So(Culprit("test"), ShouldImplement, (*Option)(nil))
-			})
-		})
-
-		Convey("Should use the correct class", func() {
-			So(Culprit("test").Class(), ShouldEqual, "culprit")
-		})
-
-		Convey("MarshalJSON", func() {
-			So(testOptionsSerialize(Culprit("test")), ShouldResemble, "test")
-		})
-	})
+	c := Culprit("test")
+	assert.Implements(t, (*Option)(nil), c, "it should implement the Option interface")
+	assert.Equal(t, "culprit", c.Class(), "it should use the correct option class")
+	assert.Equal(t, "test", testOptionsSerialize(t, c), "it should serialize to the value which was passed in the constructor")
 }

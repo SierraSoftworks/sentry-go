@@ -1,12 +1,10 @@
 package sentry
 
 import (
-	"encoding/json"
-	"fmt"
 	"testing"
 	"time"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleTimestamp() {
@@ -19,27 +17,15 @@ func ExampleTimestamp() {
 }
 
 func TestTimestamp(t *testing.T) {
-	Convey("Timestamp", t, func() {
-		Convey("Should register itself with the default providers", func() {
-			opt := testGetOptionsProvider(Timestamp(time.Now()))
-			So(opt, ShouldNotBeNil)
-		})
+	assert.NotNil(t, testGetOptionsProvider(t, Timestamp(time.Now())), "it should be registered as a default option")
 
-		Convey("Timestamp()", func() {
-			Convey("Should use the correct Class()", func() {
-				So(Timestamp(time.Now()).Class(), ShouldEqual, "timestamp")
-			})
+	now := time.Now()
+	o := Timestamp(now)
+	assert.NotNil(t, o, "should not return a nil option")
+	assert.Implements(t, (*Option)(nil), o, "it should implement the Option interface")
+	assert.Equal(t, "timestamp", o.Class(), "it should use the right option class")
 
-			Convey("MarshalJSON", func() {
-				Convey("Should marshal to a string", func() {
-					Convey("Should marshal to a string", func() {
-						t := time.Now()
-						b, err := json.Marshal(Timestamp(t))
-						So(err, ShouldBeNil)
-						So(string(b), ShouldEqual, fmt.Sprintf(`"%s"`, t.UTC().Format("2006-01-02T15:04:05")))
-					})
-				})
-			})
-		})
+	t.Run("MarshalJSON()", func(t *testing.T) {
+		assert.Equal(t, now.UTC().Format("2006-01-02T15:04:05"), testOptionsSerialize(t, o), "it should serialize to a string")
 	})
 }

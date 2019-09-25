@@ -1,10 +1,9 @@
 package sentry
 
 import (
-	"encoding/json"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleLevel() {
@@ -20,39 +19,20 @@ func ExampleLevel() {
 }
 
 func TestSeverity(t *testing.T) {
-	Convey("Severity", t, func() {
-		Convey("Level()", func() {
-			Convey("Should use the correct Class()", func() {
-				So(Level(Error).Class(), ShouldEqual, "level")
-			})
+	assert.NotNil(t, testGetOptionsProvider(t, Level(Info)), "it should be registered as a default option")
 
-			Convey("MarshalJSON", func() {
-				Convey("Should marshal to a string", func() {
-					b, err := json.Marshal(Level(Error))
-					So(err, ShouldBeNil)
-					So(string(b), ShouldEqual, `"error"`)
-				})
-			})
-		})
+	o := Level(Error)
+	assert.NotNil(t, o, "should not return a nil option")
+	assert.Implements(t, (*Option)(nil), o, "it should implement the Option interface")
+	assert.Equal(t, "level", o.Class(), "it should use the right option class")
 
-		Convey("Fatal should use the correct name", func() {
-			So(string(Fatal), ShouldEqual, "fatal")
-		})
-
-		Convey("Error should use the correct name", func() {
-			So(string(Error), ShouldEqual, "error")
-		})
-
-		Convey("Warning should use the correct name", func() {
-			So(string(Warning), ShouldEqual, "warning")
-		})
-
-		Convey("Info should use the correct name", func() {
-			So(string(Info), ShouldEqual, "info")
-		})
-
-		Convey("Debug should use the correct name", func() {
-			So(string(Debug), ShouldEqual, "debug")
-		})
+	t.Run("MarshalJSON()", func(t *testing.T) {
+		assert.Equal(t, "error", testOptionsSerialize(t, o), "it should serialize to a string")
 	})
+
+	assert.EqualValues(t, Fatal, "fatal", "fatal should use the correct name")
+	assert.EqualValues(t, Error, "error", "fatal should use the correct name")
+	assert.EqualValues(t, Warning, "warning", "fatal should use the correct name")
+	assert.EqualValues(t, Info, "info", "fatal should use the correct name")
+	assert.EqualValues(t, Debug, "debug", "fatal should use the correct name")
 }

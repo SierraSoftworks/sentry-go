@@ -3,7 +3,7 @@ package sentry
 import (
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleUseSendQueue() {
@@ -20,28 +20,16 @@ func ExampleUseSendQueue() {
 }
 
 func TestSendQueue(t *testing.T) {
-	Convey("SendQueue", t, func() {
-		Convey("UseSendQueue()", func() {
-			Convey("Should return an Option", func() {
-				q := NewSequentialSendQueue(0)
-				So(UseSendQueue(q), ShouldImplement, (*Option)(nil))
-			})
+	assert.Nil(t, UseSendQueue(nil), "it should return nil if no transport is provided")
 
-			Convey("Should return nil if no queue is provided", func() {
-				So(UseSendQueue(nil), ShouldEqual, nil)
-			})
-
-			Convey("Should use the correct Class()", func() {
-				q := NewSequentialSendQueue(0)
-				So(UseSendQueue(q).Class(), ShouldEqual, "sentry-go.sendqueue")
-			})
-
-			Convey("Should implement Omit() and always return true", func() {
-				q := NewSequentialSendQueue(0)
-				o := UseSendQueue(q)
-				So(o, ShouldImplement, (*OmitableOption)(nil))
-				So(o.(OmitableOption).Omit(), ShouldBeTrue)
-			})
-		})
-	})
+	q := NewSequentialSendQueue(0)
+	o := UseSendQueue(q)
+	assert.NotNil(t, o, "should not return a nil option")
+	assert.Implements(t, (*Option)(nil), o, "it should implement the Option interface")
+	assert.Equal(t, "sentry-go.sendqueue", o.Class(), "it should use the right option class")
+	
+	if assert.Implements(t, (*Option)(nil), o, "it should implement the OmitableOption interface") {
+		oo := o.(OmitableOption)
+		assert.True(t, oo.Omit(), "it should always return true for calls to Omit()")
+	}
 }

@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/certifi/gocertifi"
 	"github.com/pkg/errors"
 )
@@ -33,7 +33,8 @@ func newHTTPTransport() Transport {
 
 	rootCAs, err := gocertifi.CACerts()
 	if err != nil {
-		log.WithError(errors.Wrap(err, ErrMissingRootTLSCerts.Error())).Error(ErrMissingRootTLSCerts.Error())
+
+		log.Println(ErrMissingRootTLSCerts.Error())
 		return t
 	}
 
@@ -70,11 +71,6 @@ func (t *httpTransport) Send(dsn string, packet Packet) error {
 	req.Header.Set("X-Sentry-Auth", authHeader)
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("User-Agent", fmt.Sprintf("sentry-go %s (Sierra Softworks; github.com/SierraSoftworks/sentry-go)", version))
-
-	log.WithFields(log.Fields{
-		"method": req.Method,
-		"url":    req.URL.String(),
-	}).Debug("sentry: Making request to send event")
 
 	res, err := t.client.Do(req)
 	if err != nil {

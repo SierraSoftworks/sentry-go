@@ -4,20 +4,23 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestErrType(t *testing.T) {
-	Convey("ErrType", t, func() {
-		const errType = ErrType("sentry: this is a test error")
+	const errType = ErrType("sentry: this is a test error")
+	assert.True(t, errType.IsInstance(errType), "it should be an instance of itself")
+	assert.True(t, errType.IsInstance(errors.New(errType.Error())), "errors with the same message should be an instance of this error")
+	assert.EqualError(t, errType, "sentry: this is a test error", "it should report the correct error message")
 
-		Convey("IsInstance()", func() {
-			So(errType.IsInstance(errType), ShouldBeTrue)
-			So(errType.IsInstance(errors.New(errType.Error())), ShouldBeTrue)
-		})
+	type UnwrappableError interface {
+		Unwrap() error
+	}
 
-		Convey("Error()", func() {
-			So(errType.Error(), ShouldEqual, "sentry: this is a test error")
-		})
-	})
+	if assert.Implements(t, (*UnwrappableError)(nil), errType, "it should implement the Unwrap() method") {
+		var err error
+		err = errType
+
+		assert.Nil(t, err.(UnwrappableError).Unwrap(), "unwrapping the error should return nil")
+	}
 }

@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func ExampleAddInternalPrefixes() {
@@ -31,60 +32,43 @@ func ExampleStackTrace() {
 	)
 }
 
+func TestAddInternalPrefixes(t *testing.T) {
+	assert.Contains(t, defaultInternalPrefixes, "main")
+	AddInternalPrefixes("github.com/SierraSoftworks/sentry-go")
+	assert.Contains(t, defaultInternalPrefixes, "github.com/SierraSoftworks/sentry-go")
+}
+
 func TestStackTrace(t *testing.T) {
-	Convey("StackTrace", t, func() {
-		Convey("AddInternalPrefixes()", func() {
-			AddInternalPrefixes("github.com/SierraSoftworks/sentry-go")
-			So(defaultInternalPrefixes, ShouldResemble, []string{"main", "github.com/SierraSoftworks/sentry-go"})
-		})
+	o := StackTrace()
+	require.NotNil(t, o, "it should return a non-nil option")
+	assert.Implements(t, (*Option)(nil), o, "it should implement the Option interface")
+	assert.Equal(t, "stacktrace", o.Class(), "it should use the right option class")
 
-		Convey("StackTrace()", func() {
-			Convey("Should return an Option", func() {
-				So(StackTrace(), ShouldImplement, (*Option)(nil))
-			})
+	sti, ok := o.(*stackTraceOption)
+	require.True(t, ok, "it should actually be a *stackTraceOption")
 
-			Convey("Should let you collect stacktrace frames from an error", func() {
-				st := StackTrace()
-				So(st, ShouldNotBeNil)
+	assert.NotEmpty(t, sti.Frames, "it should start off with your current stack frames")
+	originalFrames := sti.Frames
 
-				err := errors.New("example error")
-				So(st.ForError(err), ShouldEqual, st)
-			})
+	err := errors.New("example error")
+	assert.Same(t, o, o.ForError(err), "it should reuse the same instance when adding error information")
+	assert.NotEmpty(t, sti.Frames, "it should have loaded frame information from the error")
+	assert.NotEqual(t, originalFrames, sti.Frames, "the frames should not be the original ones it started with")
 
-			Convey("Should allow you to set internal package prefixes", func() {
-				st := StackTrace()
-				So(st, ShouldNotBeNil)
+	assert.Equal(t, defaultInternalPrefixes, sti.internalPrefixes, "it should start out with the default internal prefixes")
 
-				sti, ok := st.(*stackTraceOption)
-				So(ok, ShouldBeTrue)
-				So(sti.internalPrefixes, ShouldResemble, defaultInternalPrefixes)
+	o.WithInternalPrefixes("github.com/SierraSoftworks")
+	assert.Contains(t, sti.internalPrefixes, "github.com/SierraSoftworks", "it should allow you to add new internal prefixes")
 
-				st.WithInternalPrefixes("github.com/SierraSoftworks/sentry-go")
-				st.WithInternalPrefixes("github.com/SierraSoftworks")
-				So(sti.internalPrefixes, ShouldContain, "github.com/SierraSoftworks")
-				So(sti.internalPrefixes, ShouldContain, "github.com/SierraSoftworks/sentry-go")
-			})
-		})
+	if assert.Implements(t, (*FinalizeableOption)(nil), o, "it should implement the FinalizeableOption interface") {
+		for i, frame := range sti.Frames {
+			assert.False(t, frame.InApp, "all frames should initially be marked as external (frame index=%d)", i)
+		}
 
-		Convey("Should implement Finalize()", func() {
-			So(StackTrace(), ShouldImplement, (*FinalizableOption)(nil))
-		})
+		sti.Finalize()
 
-		Convey("Finalize()", func() {
-			st := StackTrace().WithInternalPrefixes("github.com/SierraSoftworks/sentry-go")
-			So(st, ShouldNotBeNil)
-
-			sti, ok := st.(*stackTraceOption)
-			So(ok, ShouldBeTrue)
-
-			sti.Finalize()
-
-			So(len(sti.Frames), ShouldBeGreaterThan, 0)
-			So(sti.Frames[len(sti.Frames)-1].InApp, ShouldBeTrue)
-		})
-
-		Convey("Should use the correct Class()", func() {
-			So(StackTrace().Class(), ShouldEqual, "stacktrace")
-		})
-	})
+		if assert.NotEmpty(t, sti.Frames, "the frames list should not be empty") {
+			assert.True(t, sti.Frames[len(sti.Frames)-1].InApp, "the final frame should be marked as internal")
+		}
+	}
 }

@@ -1,10 +1,9 @@
 package sentry
 
 import (
-	"encoding/json"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func ExamplePlatform() {
@@ -20,26 +19,14 @@ func ExamplePlatform() {
 }
 
 func TestPlatform(t *testing.T) {
-	Convey("Platform", t, func() {
-		Convey("Should register itself with the default providers", func() {
-			opt := testGetOptionsProvider(Platform("go"))
-			So(opt, ShouldNotBeNil)
-		})
+	assert.NotNil(t, testGetOptionsProvider(t, Platform("go")), "it should be registered as a default option")
 
-		Convey("Platform()", func() {
-			Convey("Should use the correct Class()", func() {
-				So(Platform("go").Class(), ShouldEqual, "platform")
-			})
+	o := Platform("go")
+	assert.NotNil(t, o, "should not return a nil option")
+	assert.Implements(t, (*Option)(nil), o, "it should implement the Option interface")
+	assert.Equal(t, "platform", o.Class(), "it should use the right option class")
 
-			Convey("MarshalJSON", func() {
-				Convey("Should marshal to a string", func() {
-					Convey("Should marshal to a string", func() {
-						b, err := json.Marshal(Platform("go"))
-						So(err, ShouldBeNil)
-						So(string(b), ShouldEqual, `"go"`)
-					})
-				})
-			})
-		})
+	t.Run("MarshalJSON()", func(t *testing.T) {
+		assert.Equal(t, "go", testOptionsSerialize(t, o), "it should serialize to a string")
 	})
 }

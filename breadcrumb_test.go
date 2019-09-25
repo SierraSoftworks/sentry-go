@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleBreadcrumb() {
@@ -32,104 +32,59 @@ func ExampleBreadcrumb() {
 }
 
 func TestBreadcrumb(t *testing.T) {
-	Convey("Breadcrumb", t, func() {
-		data := map[string]interface{}{
-			"test": true,
+	data := map[string]interface{}{
+		"test": true,
+	}
+
+	t.Run("newBreadcrumb", func(t *testing.T) {
+		b := newBreadcrumb("default", data)
+
+		if assert.NotNil(t, b) {
+			assert.Implements(t, (*Breadcrumb)(nil), b)
+			assert.Equal(t, "", b.Type, "It should set the correct type")
+			assert.NotEqual(t, 0, b.Timestamp, "It should set the timestamp")
+			assert.Equal(t, data, b.Data, "It should set the correct data")
 		}
+	})
 
-		Convey("newBreadcrumb", func() {
+	t.Run("WithMessage()", func(t *testing.T) {
+		b := newBreadcrumb("default", data)
 
-			Convey("Should return a Breadcrumb type", func() {
-				b := newBreadcrumb("default", data)
-				So(b, ShouldNotBeNil)
+		if assert.NotNil(t, b) {
+			bb := b.WithMessage("test")
+			assert.Equal(t, b, bb, "It should return the breadcrumb for chaining")
+			assert.Equal(t, "test", b.Message)
+		}
+	})
 
-				So(b, ShouldImplement, (*Breadcrumb)(nil))
-			})
+	t.Run("WithCategory()", func(t *testing.T) {
+		b := newBreadcrumb("default", data)
 
-			Convey("Should set the timestamp", func() {
-				b := newBreadcrumb("default", data)
-				So(b, ShouldNotBeNil)
-				So(b.Timestamp, ShouldNotEqual, 0)
-			})
+		if assert.NotNil(t, b) {
+			bb := b.WithCategory("test")
+			assert.Equal(t, b, bb, "It should return the breadcrumb for chaining")
+			assert.Equal(t, "test", b.Category)
+		}
+	})
 
-			Convey("Should set the data", func() {
-				b := newBreadcrumb("default", data)
-				So(b, ShouldNotBeNil)
-				So(b.Data, ShouldEqual, data)
-			})
+	t.Run("WithLevel()", func(t *testing.T) {
+		b := newBreadcrumb("default", data)
 
-			Convey("Should set the Type correctly", func() {
-				Convey("With default type", func() {
-					b := newBreadcrumb("default", data)
+		if assert.NotNil(t, b) {
+			bb := b.WithLevel(Error)
+			assert.Equal(t, b, bb, "It should return the breadcrumb for chaining")
+			assert.Equal(t, Error, b.Level)
+		}
+	})
 
-					So(b, ShouldNotBeNil)
-					So(b.Type, ShouldEqual, "")
-				})
+	t.Run("WithTimestamp()", func(t *testing.T) {
+		b := newBreadcrumb("default", data)
+		now := time.Now()
 
-				Convey("With non-default type", func() {
-					b := newBreadcrumb("test", data)
-
-					So(b, ShouldNotBeNil)
-					So(b.Type, ShouldEqual, "test")
-				})
-			})
-		})
-
-		Convey("WithMessage()", func() {
-			b := newBreadcrumb("default", data)
-			So(b, ShouldNotBeNil)
-
-			Convey("Should update the Message field", func() {
-				b.WithMessage("test")
-				So(b.Message, ShouldEqual, "test")
-			})
-
-			Convey("Should be chainable", func() {
-				So(b.WithMessage("test"), ShouldEqual, b)
-			})
-		})
-
-		Convey("WithCategory()", func() {
-			b := newBreadcrumb("default", data)
-			So(b, ShouldNotBeNil)
-
-			Convey("Should update the Category field", func() {
-				b.WithCategory("test")
-				So(b.Category, ShouldEqual, "test")
-			})
-
-			Convey("Should be chainable", func() {
-				So(b.WithCategory("test"), ShouldEqual, b)
-			})
-		})
-
-		Convey("WithLevel()", func() {
-			b := newBreadcrumb("default", data)
-			So(b, ShouldNotBeNil)
-
-			Convey("Should update the Level field", func() {
-				b.WithLevel(Error)
-				So(b.Level, ShouldEqual, Error)
-			})
-
-			Convey("Should be chainable", func() {
-				So(b.WithLevel(Error), ShouldEqual, b)
-			})
-		})
-
-		Convey("WithTimestamp()", func() {
-			b := newBreadcrumb("default", data)
-			So(b, ShouldNotBeNil)
-
-			Convey("Should update the Timestamp field", func() {
-				now := time.Now()
-				b.WithTimestamp(now)
-				So(b.Timestamp, ShouldEqual, now.UTC().Unix())
-			})
-
-			Convey("Should be chainable", func() {
-				So(b.WithTimestamp(time.Now()), ShouldEqual, b)
-			})
-		})
+		if assert.NotNil(t, b) {
+			bb := b.WithTimestamp(now)
+			assert.Equal(t, b, bb, "It should return the breadcrumb for chaining")
+			assert.Equal(t, now.UTC().Unix(), b.Timestamp)
+		}
 	})
 }

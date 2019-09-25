@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleEnvironment() {
@@ -20,39 +20,45 @@ func ExampleEnvironment() {
 }
 
 func TestEnvironment(t *testing.T) {
-	Convey("Environment", t, func() {
-		Convey("Should register with the default providers", func() {
-			Convey("If the ENV environment variable is set", func() {
-				os.Setenv("ENV", "testing")
-				defer os.Unsetenv("ENV")
+	o := Environment("testing")
+	assert.NotNil(t, o, "it should not return a nil option")
+	assert.Implements(t, (*Option)(nil), o, "it should implement the option interface")
+	assert.Equal(t, "environment", o.Class(), "it should use the correct option class")
 
-				opt := testGetOptionsProvider(&environmentOption{})
-				So(opt, ShouldNotBeNil)
-				So(opt.(*environmentOption).env, ShouldEqual, "testing")
-			})
+	t.Run("No Environment", func(t *testing.T) {
+		os.Unsetenv("ENV")
+		os.Unsetenv("ENVIRONMENT")
 
-			Convey("If the ENVIRONMENT environment variable is set", func() {
-				os.Setenv("ENVIRONMENT", "testing")
-				defer os.Unsetenv("ENVIRONMENT")
+		opt := testGetOptionsProvider(t, &environmentOption{})
+		assert.Nil(t, opt, "it should not be registered as a default option provider")
+	})
 
-				opt := testGetOptionsProvider(&environmentOption{})
-				So(opt, ShouldNotBeNil)
-				So(opt.(*environmentOption).env, ShouldEqual, "testing")
-			})
-		})
+	t.Run("$ENV=...", func(t *testing.T){
+		os.Setenv("ENV", "testing")
+		defer os.Unsetenv("ENV")
 
-		Convey("Environment()", func() {
-			Convey("Should return an Option", func() {
-				So(Environment("testing"), ShouldImplement, (*Option)(nil))
-			})
-		})
+		opt := testGetOptionsProvider(t, &environmentOption{})
+		assert.NotNil(t, opt, "it should be registered with the default option providers")
+		assert.IsType(t, &environmentOption{}, opt, "it should actually be an *environmentOption")
 
-		Convey("Should use the correct class", func() {
-			So(Environment("test").Class(), ShouldEqual, "environment")
-		})
+		oo := opt.(*environmentOption)
+		assert.Equal(t, "testing", oo.env, "it should set the environment to the same value as the $ENV variable")
+	})
 
-		Convey("MarshalJSON", func() {
-			So(testOptionsSerialize(Environment("test")), ShouldResemble, "test")
-		})
+	t.Run("$ENVIRONMENT=...", func(t *testing.T){
+		os.Setenv("ENVIRONMENT", "testing")
+		defer os.Unsetenv("ENVIRONMENT")
+
+		opt := testGetOptionsProvider(t, &environmentOption{})
+		assert.NotNil(t, opt, "it should be registered with the default option providers")
+		assert.IsType(t, &environmentOption{}, opt, "it should actually be an *environmentOption")
+
+		oo := opt.(*environmentOption)
+		assert.Equal(t, "testing", oo.env, "it should set the environment to the same value as the $ENVIRONMENT variable")
+	})
+
+	t.Run("MarshalJSON()", func(t *testing.T) {
+		s := testOptionsSerialize(t, o)
+		assert.Equal(t, "testing", s, "it should serialize to the name of the environment")
 	})
 }

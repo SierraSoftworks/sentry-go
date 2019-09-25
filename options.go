@@ -24,10 +24,10 @@ type MergeableOption interface {
 	Merge(old Option) Option
 }
 
-// A FinalizableOption exposes a Finalize() method which is called by the
+// A FinalizeableOption exposes a Finalize() method which is called by the
 // Packet builder before its value is used. This gives the option the opportunity
 // to perform any last-minute formatting and configuration.
-type FinalizableOption interface {
+type FinalizeableOption interface {
 	Finalize()
 }
 

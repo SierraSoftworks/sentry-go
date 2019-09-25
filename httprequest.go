@@ -35,6 +35,8 @@ func HTTPRequest(req *http.Request) HTTPRequestOption {
 	}
 }
 
+const sanitizationString = "********"
+
 type httpRequestOption struct {
 	request     *http.Request
 	withCookies bool
@@ -115,10 +117,8 @@ func (h *httpRequestOption) buildData() *HTTPRequestInfo {
 				v = ps[1]
 			}
 
-			for _, keyword := range h.sanitize {
-				if strings.Contains(k, keyword) {
-					v = "********"
-				}
+			if shouldSanitize(k, h.sanitize) {
+				v = sanitizationString
 			}
 
 			p.Env[k] = v
@@ -130,22 +130,29 @@ func (h *httpRequestOption) buildData() *HTTPRequestInfo {
 		for k, v := range h.request.Header {
 			p.Headers[k] = strings.Join(v, ",")
 
-			for _, keyword := range h.sanitize {
-				if strings.Contains(k, keyword) {
-					p.Headers[k] = "********"
-					break
-				}
+			if shouldSanitize(k, h.sanitize) {
+				p.Headers[k] = sanitizationString
 			}
 		}
 	}
 	return p
 }
 
+func shouldSanitize(s string, fields []string) bool {
+	for _, keyword := range fields {
+		if strings.Contains(strings.ToLower(s), strings.ToLower(keyword)) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func sanitizeQuery(query url.Values, fields []string) url.Values {
 	for field := range query {
 		for _, keyword := range fields {
-			if strings.Contains(field, keyword) {
-				query[field] = []string{"********"}
+			if strings.Contains(strings.ToLower(field), strings.ToLower(keyword)) {
+				query[field] = []string{sanitizationString}
 				break
 			}
 		}

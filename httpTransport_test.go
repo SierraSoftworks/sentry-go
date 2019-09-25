@@ -13,34 +13,28 @@ import (
 	"strings"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHTTPTransport(t *testing.T) {
-	deserializePacket := func(dataType string, data io.Reader) (interface{}, error) {
+	deserializePacket := func(t *testing.T, dataType string, data io.Reader) interface{} {
 		var out interface{}
 
 		if strings.Contains(dataType, "application/json") {
-			if err := json.NewDecoder(data).Decode(&out); err != nil {
-				return nil, err
-			}
+			require.Nil(t, json.NewDecoder(data).Decode(&out), "there should be no problems deserializing the packet")
 		} else if strings.Contains(dataType, "application/octet-stream") {
 			b64 := base64.NewDecoder(base64.StdEncoding, data)
 			deflate, err := zlib.NewReader(b64)
 			defer deflate.Close()
-			if err != nil {
-				return nil, err
-			}
 
-			if err := json.NewDecoder(deflate).Decode(&out); err != nil {
-				return nil, err
-			}
+			require.Nil(t, err, "there should be no errors creating the zlib deflator")
+			require.Nil(t, json.NewDecoder(deflate).Decode(&out), "there should be no problems deserializing the packet")
 		} else {
-			return nil, fmt.Errorf("unknown datatype for packet: %s", dataType)
+			t.Fatalf("unknown datatype for packet: %s", dataType)
 		}
 
-		return out, nil
+		return out
 	}
 
 	longMessage := func(minLength int) Option {
@@ -52,171 +46,163 @@ func TestHTTPTransport(t *testing.T) {
 		return Message(msg)
 	}
 
-	Convey("HTTPTransport", t, func() {
-		t := newHTTPTransport()
-		So(t, ShouldNotBeNil)
+	tr := newHTTPTransport()
+	require.NotNil(t, tr, "the transport should not be nil")
 
-		ht, ok := t.(*httpTransport)
-		So(ok, ShouldBeTrue)
+	ht, ok := tr.(*httpTransport)
+	require.True(t, ok, "it should actually be a *httpTransport")
 
-		Convey("newHTTPTransport", func() {
-			So(ht.client, ShouldNotEqual, http.DefaultClient)
+	t.Run("Send()", func(t *testing.T) {
+		p := NewPacket()
+		require.NotNil(t, p, "the packet should not be nil")
+
+		received := false
+		statusCode := 200
+
+		mux := http.NewServeMux()
+		require.NotNil(t, mux, "the http mux should not be nil")
+		mux.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
+			received = true
+			res.WriteHeader(statusCode)
+			res.Write([]byte("No data"))
+
+			assert.Equal(t, "POST", req.Method, "the request should use HTTP POST")
+			assert.Equal(t, "/api/1/store/", req.RequestURI, "the request should use the right API endpoint")
+
+			assert.Contains(t, []string{
+				"Sentry sentry_version=4, sentry_key=key, sentry_secret=secret",
+				"Sentry sentry_version=4, sentry_key=key",
+			}, req.Header.Get("X-Sentry-Auth"), "it should use the right auth header")
+
+			expectedData := testSerializePacket(t, p)
+
+			data := deserializePacket(t, req.Header.Get("Content-Type"), req.Body)
+
+			assert.Equal(t, expectedData, data, "the data should match what we expected")
 		})
 
-		Convey("Send()", func(c C) {
-			p := NewPacket()
+		ts := httptest.NewServer(mux)
+		defer ts.Close()
 
-			received := false
-			statusCode := 200
-
-			mux := http.NewServeMux()
-			mux.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
-				received = true
-				res.WriteHeader(statusCode)
-				res.Write([]byte("No data"))
-
-				c.So(req.Method, ShouldEqual, "POST")
-				c.So(req.RequestURI, ShouldEqual, "/api/1/store/")
-				c.So(req.Header.Get("X-Sentry-Auth"), ShouldEqual, "Sentry sentry_version=4, sentry_key=user, sentry_secret=pass")
-
-				expectedData, err := testSerializePacket(p)
-				c.So(err, ShouldBeNil)
-
-				data, err := deserializePacket(req.Header.Get("Content-Type"), req.Body)
-				c.So(err, ShouldBeNil)
-				c.So(data, ShouldNotBeNil)
-				c.So(data, ShouldResemble, expectedData)
-			})
-
-			ts := httptest.NewServer(mux)
-			defer ts.Close()
-
+		makeDSN := func(publicKey, privateKey string) string {
 			uri, err := url.Parse(ts.URL)
-			So(err, ShouldBeNil)
-			uri.User = url.UserPassword("user", "pass")
+			require.Nil(t, err, "we should not fail to parse the URI")
+
+			if publicKey != "" {
+				uri.User = url.UserPassword(publicKey, privateKey)
+			}
+
 			uri.Path = "/1"
 
-			dsn := uri.String()
+			return uri.String()
+		}
 
-			Convey("With a small packet", func() {
-				So(t.Send(dsn, p), ShouldBeNil)
-				So(received, ShouldBeTrue)
-			})
+		cases := []struct {
+			Name       string
+			Packet     Packet
+			DSN        string
+			StatusCode int
+			Error      error
+			Received   bool
+		}{
+			{"Short Packet", NewPacket(), makeDSN("key", "secret"), 200, nil, true},
+			{"Long Packet", NewPacket().SetOptions(longMessage(10000)), makeDSN("key", "secret"), 200, nil, true},
+			{"No DSN", NewPacket(), "", 200, nil, false},
+			{"Invalid DSN URL", NewPacket(), ":", 400, ErrBadURL, false},
+			{"Missing Public Key", NewPacket(), makeDSN("", ""), 401, ErrMissingPublicKey, false},
+			{"Invalid Server", NewPacket(), "https://key:secret@invalid_domain.not_a_tld/sentry/1", 404, ErrType("failed to submit request"), false},
+			{"Missing Private Key with Required Key", NewPacket(), makeDSN("key", ""), 401, fmt.Errorf("got http status 401, expected 200"), true},
+			{"Missing Private Key", NewPacket(), makeDSN("key", ""), 200, nil, true},
+		}
 
-			Convey("With a large packet", func() {
-				p.SetOptions(longMessage(1000))
-				So(t.Send(dsn, p), ShouldBeNil)
-				So(received, ShouldBeTrue)
-			})
+		for _, tc := range cases {
+			tc := tc
 
-			Convey("Without a DSN", func() {
-				So(t.Send("", p), ShouldBeNil)
-				So(received, ShouldBeFalse)
-			})
+			t.Run(tc.Name, func(t *testing.T) {
+				received = false
+				statusCode = tc.StatusCode
+				p = tc.Packet
 
-			Convey("With an invalid DSN URL", func() {
-				err := t.Send(":", p)
-				So(err, ShouldNotBeNil)
-				So(ErrBadURL.IsInstance(err), ShouldBeTrue)
-			})
+				err := tr.Send(tc.DSN, tc.Packet)
+				if tc.Error == nil {
+					assert.Nil(t, err, "it should not fail to send the packet")
+				} else if errType, ok := tc.Error.(ErrType); ok {
+					assert.True(t, errType.IsInstance(err), "it should return the right error")
+				} else {
+					assert.EqualError(t, err, tc.Error.Error(), "it should return the right error")
+				}
 
-			Convey("With a missing public key", func() {
-				err := t.Send("https://example.com/sentry/1", p)
-				So(err, ShouldNotBeNil)
-				So(ErrMissingPublicKey.IsInstance(err), ShouldBeTrue)
-			})
-
-			Convey("With a missing private key", func() {
-				err := t.Send("https://key@example.com/sentry/1", p)
-				So(err, ShouldNotBeNil)
-				So(err.Error(), ShouldEqual, "got http status 404, expected 200")
-			})
-
-			Convey("When it cannot connect to the server", func() {
-				err := t.Send("https://key:secret@invalid_domain.not_a_tld/sentry/1", p)
-				So(err, ShouldNotBeNil)
-				So(err.Error(), ShouldStartWith, "failed to submit request: ")
-			})
-
-			Convey("When an HTTP error is encountered", func() {
-				statusCode = 403
-				err := t.Send(dsn, p)
-				So(err, ShouldNotBeNil)
-				So(err.Error(), ShouldEqual, "got http status 403, expected 200")
-			})
-		})
-
-		Convey("serializePacket()", func() {
-			p := NewPacket()
-
-			Convey("Short Packet", func() {
-				data, dataType, err := ht.serializePacket(p)
-				So(err, ShouldBeNil)
-				So(data, ShouldNotBeNil)
-				So(dataType, ShouldContainSubstring, "application/json")
-
-				pd, err := deserializePacket(dataType, data)
-				So(err, ShouldBeNil)
-
-				ped, err := testSerializePacket(p)
-				So(err, ShouldBeNil)
-				So(pd, ShouldResemble, ped)
-			})
-
-			Convey("Long Packet", func() {
-				p.SetOptions(longMessage(10000))
-				data, dataType, err := ht.serializePacket(p)
-				So(err, ShouldBeNil)
-				So(data, ShouldNotBeNil)
-				So(dataType, ShouldContainSubstring, "application/octet-stream")
-
-				pd, err := deserializePacket(dataType, data)
-				So(err, ShouldBeNil)
-
-				ped, err := testSerializePacket(p)
-				So(err, ShouldBeNil)
-				So(pd, ShouldResemble, ped)
-			})
-		})
-
-		Convey("parseDSN()", func() {
-			Convey("With an empty DSN", func() {
-				url, authheader, err := ht.parseDSN("")
-				So(err, ShouldBeNil)
-				So(url, ShouldEqual, "")
-				So(authheader, ShouldEqual, "")
-			})
-
-			Convey("With an invalid DSN", func() {
-				url, authheader, err := ht.parseDSN("@")
-				So(err, ShouldNotBeNil)
-				So(url, ShouldEqual, "")
-				So(authheader, ShouldEqual, "")
-			})
-
-			Convey("With a valid DSN", func() {
-				url, authHeader, err := ht.parseDSN("https://user:pass@example.com/sentry/1")
-				So(err, ShouldBeNil)
-				So(url, ShouldEqual, "https://example.com/sentry/api/1/store/")
-				So(authHeader, ShouldEqual, "Sentry sentry_version=4, sentry_key=user, sentry_secret=pass")
-			})
-		})
-
-		// If you set $SENTRY_DSN you can send events to a live Sentry instance
-		// to confirm that this library functions correctly.
-		if liveTestDSN := os.Getenv("SENTRY_DSN"); liveTestDSN != "" {
-			Convey("Live Test", func() {
-				log.SetLevel(log.DebugLevel)
-				defer log.SetLevel(log.InfoLevel)
-
-				p := NewPacket().SetOptions(
-					Message("Ran Live Test"),
-					Release(version),
-					Level(Debug),
-				)
-
-				So(t.Send(liveTestDSN, p), ShouldBeNil)
+				if tc.Received {
+					assert.True(t, received, "the server should have received the packet")
+				} else {
+					assert.False(t, received, "the server should not have received the packet")
+				}
 			})
 		}
 	})
+
+	t.Run("serializePacket()", func(t *testing.T) {
+		cases := []struct {
+			Name     string
+			Packet   Packet
+			DataType string
+		}{
+			{"Short Packet", NewPacket().SetOptions(Message("short packet")), "application/json; charset=utf8"},
+			{"Long Packet", NewPacket().SetOptions(longMessage(10000)), "application/octet-stream"},
+		}
+
+		for _, tc := range cases {
+			tc := tc
+			t.Run(tc.Name, func(t *testing.T) {
+				data, dataType, err := ht.serializePacket(tc.Packet)
+				assert.Nil(t, err, "there should be no error serializing the packet")
+				assert.Equal(t, tc.DataType, dataType, "the request datatype should be %s", tc.DataType)
+				assert.NotNil(t, data, "the request data should not be nil")
+
+				assert.Equal(t, testSerializePacket(t, tc.Packet), deserializePacket(t, dataType, data), "the serialized packet should match what we expected")
+			})
+		}
+	})
+
+	t.Run("parseDSN()", func(t *testing.T) {
+		cases := []struct {
+			Name       string
+			DSN        string
+			URL        string
+			AuthHeader string
+			Error      error
+		}{
+			{"Empty DSN", "", "", "", nil},
+			{"Invalid DSN", "@", "", "", fmt.Errorf("sentry: missing public key: missing URL user")},
+			{"Full DSN", "https://user:pass@example.com/sentry/1", "https://example.com/sentry/api/1/store/", "Sentry sentry_version=4, sentry_key=user, sentry_secret=pass", nil},
+		}
+
+		for _, tc := range cases {
+			tc := tc
+			t.Run(tc.Name, func(t *testing.T) {
+				url, authHeader, err := ht.parseDSN(tc.DSN)
+				if tc.Error != nil {
+					assert.EqualError(t, err, tc.Error.Error(), "there should be an error with the right message")
+				} else {
+					assert.Nil(t, err, "there should be no error")
+				}
+				assert.Equal(t, tc.URL, url, "the parsed URL should be correct")
+				assert.Equal(t, tc.AuthHeader, authHeader, "the parsed auth header should be correct")
+			})
+		}
+	})
+
+	// If you set $SENTRY_DSN you can send events to a live Sentry instance
+	// to confirm that this library functions correctly.
+	if liveTestDSN := os.Getenv("SENTRY_DSN"); liveTestDSN != "" {
+		t.Run("Live Test", func(t *testing.T) {
+			p := NewPacket().SetOptions(
+				Message("Ran Live Test"),
+				Release(version),
+				Level(Debug),
+			)
+
+			assert.Nil(t, tr.Send(liveTestDSN, p), "it should not fail to send the packet")
+		})
+	}
 }
