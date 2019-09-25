@@ -66,7 +66,7 @@ type breadcrumbsList struct {
 	Head   *breadcrumbListNode
 	Tail   *breadcrumbListNode
 	Length int
-	mutex  sync.Mutex
+	mutex  sync.RWMutex
 }
 
 func (l *breadcrumbsList) Class() string {
@@ -82,7 +82,7 @@ func (l *breadcrumbsList) WithSize(length int) BreadcrumbsList {
 	for l.Length > l.MaxLength {
 		if l.Head == nil {
 			break
-		}
+	}
 		l.Head = l.Head.Next
 		l.Length--
 	}
@@ -157,6 +157,9 @@ func (l *breadcrumbsList) append(b Breadcrumb) {
 }
 
 func (l *breadcrumbsList) list() []Breadcrumb {
+	l.mutex.RLock()
+	defer l.mutex.RUnlock()
+
 	current := l.Head
 	out := []Breadcrumb{}
 	for current != nil {
