@@ -34,7 +34,8 @@ func TestEventID(t *testing.T) {
 	assert.Regexp(t, "^[0-9a-f]{32}$", id, "the event ID should be 32 characters long and only alphanumeric characters")
 
 	t.Run("EventID()", func(t *testing.T) {
-		assert.Nil(t, EventID("invalid"), "it should return nil if the ID is invalid")
+		assert.Nil(t, EventID("invalid"), "it should return nil if the ID has the wrong length")
+		assert.Nil(t, EventID("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"), "it should return nil if the ID contains invalid characters")
 
 		o := EventID(id)
 		assert.NotNil(t, o, "it should return a non-nil option if the ID is valid")
@@ -47,7 +48,7 @@ func TestEventID(t *testing.T) {
 		})
 	})
 
-	t.Run("Packet Extensions", func (t *testing.T) {
+	t.Run("Packet Extensions", func(t *testing.T) {
 		t.Run("getEventID()", func(t *testing.T) {
 			p := NewPacket()
 			assert.NotNil(t, p, "the packet should not be nil")

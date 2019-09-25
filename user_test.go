@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func ExampleUser() {
@@ -29,6 +30,8 @@ func ExampleUser() {
 }
 
 func TestUser(t *testing.T) {
+	assert.Nil(t, User(nil), "it should return nil if the user details are nil")
+
 	user := UserInfo{
 		ID:        "17ba08f7cc89a912bf812918",
 		Email:     "test@example.com",
@@ -48,7 +51,7 @@ func TestUser(t *testing.T) {
 	}
 
 	o := User(&user)
-	assert.NotNil(t, o, "should not return a nil option")
+	require.NotNil(t, o, "should not return a nil option")
 	assert.Implements(t, (*Option)(nil), o, "it should implement the Option interface")
 	assert.Equal(t, "user", o.Class(), "it should use the right option class")
 
