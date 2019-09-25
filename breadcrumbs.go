@@ -79,10 +79,13 @@ func (l *breadcrumbsList) WithSize(length int) BreadcrumbsList {
 
 	l.MaxLength = length
 
-	for l.Length > l.MaxLength {
-		if l.Head == nil {
-			break
+	if length == 0 {
+		l.Head = nil
+		l.Tail = nil
+		l.Length = 0
 	}
+
+	for l.Length > l.MaxLength && l.Head != nil {
 		l.Head = l.Head.Next
 		l.Length--
 	}
@@ -147,10 +150,7 @@ func (l *breadcrumbsList) append(b Breadcrumb) {
 	l.Tail = n
 	l.Length++
 
-	for l.Length > l.MaxLength {
-		if l.Head == nil {
-			break
-		}
+	for l.Length > l.MaxLength && l.Head != nil {
 		l.Head = l.Head.Next
 		l.Length--
 	}
