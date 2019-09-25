@@ -1,10 +1,5 @@
 package sentry
 
-import (
-	"bytes"
-	"encoding/json"
-)
-
 // A Packet is a JSON serializable object that will be sent to
 // the Sentry server to describe an event. It provides convinience
 // methods for setting options and handling the various types of
@@ -64,7 +59,7 @@ func (p packet) setOption(option Option) {
 
 	// If the option implements Finalize(), call it to give the
 	// option the chance to prepare itself properly
-	if finalizable, ok := option.(FinalizableOption); ok {
+	if finalizable, ok := option.(FinalizeableOption); ok {
 		finalizable.Finalize()
 	}
 
@@ -79,18 +74,4 @@ func (p packet) setOption(option Option) {
 	} else {
 		p[option.Class()] = option
 	}
-}
-
-func testSerializePacket(p Packet) (interface{}, error) {
-	buf := bytes.NewBuffer([]byte{})
-	if err := json.NewEncoder(buf).Encode(p); err != nil {
-		return nil, err
-	}
-
-	var data interface{}
-	if err := json.NewDecoder(buf).Decode(&data); err != nil {
-		return nil, err
-	}
-
-	return data, nil
 }

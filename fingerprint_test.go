@@ -3,7 +3,7 @@ package sentry
 import (
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleFingerprint() {
@@ -19,19 +19,12 @@ func ExampleFingerprint() {
 }
 
 func TestFingerprint(t *testing.T) {
-	Convey("Fingerprint", t, func() {
-		Convey("Fingerprint()", func() {
-			Convey("Should return an Option", func() {
-				So(Fingerprint("test"), ShouldImplement, (*Option)(nil))
-			})
-		})
+	o := Fingerprint("test")
+	assert.NotNil(t, o, "it should not return a nil option")
+	assert.Implements(t, (*Option)(nil), o, "it should implement the Option interface")
+	assert.Equal(t, "fingerprint", o.Class(), "it should use the right option class")
 
-		Convey("Should use the correct class", func() {
-			So(Fingerprint("test").Class(), ShouldEqual, "fingerprint")
-		})
-
-		Convey("MarshalJSON", func() {
-			So(testOptionsSerialize(Fingerprint("test")), ShouldResemble, []interface{}{"test"})
-		})
+	t.Run("MarshalJSON()", func (t *testing.T) {
+		assert.Equal(t, []interface{}{"test"}, testOptionsSerialize(t, o), "it should serialize as a list of fingerprint keys")
 	})
 }

@@ -8,8 +8,7 @@ import (
 
 	"testing"
 
-	"github.com/smartystreets/goconvey/convey"
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleAddDefaultOptions() {
@@ -34,43 +33,38 @@ func ExampleAddDefaultOptionProvider() {
 }
 
 func TestOptions(t *testing.T) {
-	Convey("Options", t, func() {
-		oldOptionsProviders := defaultOptionProviders
+	oldOptionsProviders := defaultOptionProviders
+	defer func() {
+		defaultOptionProviders = oldOptionsProviders
+	}()
+
+	id, err := NewEventID()
+	assert.Nil(t, err, "there should be no errors creating the ID")
+
+	t.Run("AddDefaultOptionProvider()", func(t *testing.T) {
 		defaultOptionProviders = []func() Option{}
-		defer func() {
-			defaultOptionProviders = oldOptionsProviders
-		}()
 
-		Convey("AddDefaultOptionProvider", func() {
-			So(defaultOptionProviders, ShouldBeEmpty)
+		provider := func() Option {
+			return EventID(id)
+		}
 
-			id, err := NewEventID()
-			So(err, ShouldBeNil)
-			provider := func() Option {
-				return EventID(id)
-			}
+		AddDefaultOptionProvider(provider)
+		assert.Len(t, defaultOptionProviders, 1, "the provider should now be present in the default options providers list")
 
-			AddDefaultOptionProvider(provider)
-			So(defaultOptionProviders, ShouldHaveLength, 1)
+		for _, provider := range defaultOptionProviders {
+			assert.Equal(t, EventID(id), provider(), "the provider should return the right option")
+		}
+	})
 
-			for _, provider := range defaultOptionProviders {
-				So(provider(), ShouldResemble, EventID(id))
-			}
-		})
+	t.Run("AddDefaultOptions()", func(t *testing.T) {
+		defaultOptionProviders = []func() Option{}
 
-		Convey("AddDefaultOptions", func() {
-			So(defaultOptionProviders, ShouldBeEmpty)
+		AddDefaultOptions(EventID(id), nil, EventID(id))
+		assert.Len(t, defaultOptionProviders, 2, "the provider should now be present in the default options providers list")
 
-			id, err := NewEventID()
-			So(err, ShouldBeNil)
-
-			AddDefaultOptions(EventID(id), nil, EventID(id))
-			So(defaultOptionProviders, ShouldHaveLength, 2)
-
-			for _, provider := range defaultOptionProviders {
-				So(provider(), ShouldResemble, EventID(id))
-			}
-		})
+		for _, provider := range defaultOptionProviders {
+			assert.Equal(t, EventID(id), provider(), "the provider should return the right option")
+		}
 	})
 }
 
@@ -101,15 +95,15 @@ func (o *testOmitableOption) Omit() bool {
 	return o.omit
 }
 
-type testFinalizableOption struct {
+type testFinalizeableOption struct {
 	finalized bool
 }
 
-func (o *testFinalizableOption) Class() string {
+func (o *testFinalizeableOption) Class() string {
 	return "test"
 }
 
-func (o *testFinalizableOption) Finalize() {
+func (o *testFinalizeableOption) Finalize() {
 	o.finalized = true
 }
 
@@ -157,9 +151,9 @@ func (o *testSerializableOption) MarshalJSON() ([]byte, error) {
 	return json.Marshal(o.data)
 }
 
-func testGetOptionsProvider(sameType Option) Option {
+func testGetOptionsProvider(t *testing.T, sameType Option) Option {
 	st := reflect.TypeOf(sameType)
-	convey.So(st, convey.ShouldNotBeNil)
+	assert.NotNil(t, st, "getting the reflection type should not fail")
 
 	for _, provider := range defaultOptionProviders {
 		opt := provider()
@@ -171,14 +165,14 @@ func testGetOptionsProvider(sameType Option) Option {
 	return nil
 }
 
-func testOptionsSerialize(opt Option) interface{} {
+func testOptionsSerialize(t *testing.T, opt Option) interface{} {
 	if opt == nil {
 		return nil
 	}
 
 	var data interface{}
 	buf := bytes.NewBuffer([]byte{})
-	convey.So(json.NewEncoder(buf).Encode(opt), convey.ShouldBeNil)
-	convey.So(json.NewDecoder(buf).Decode(&data), convey.ShouldBeNil)
+	assert.Nil(t, json.NewEncoder(buf).Encode(opt), "no error should occur when serializing to JSON")
+	assert.Nil(t, json.NewDecoder(buf).Decode(&data), "no error should occur when deserializing from JSON")
 	return data
 }

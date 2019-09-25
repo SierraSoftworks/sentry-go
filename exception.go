@@ -53,6 +53,10 @@ func (e *ExceptionInfo) ForError(err error) *ExceptionInfo {
 // ExceptionForError allows you to include the details of an error which
 // occurred within your application as part of the event you send to Sentry.
 func ExceptionForError(err error) Option {
+	if err == nil {
+		return nil
+	}
+
 	exceptions := []*ExceptionInfo{}
 
 	for err != nil {
@@ -108,7 +112,7 @@ func (o *exceptionOption) Merge(old Option) Option {
 func (o *exceptionOption) Finalize() {
 	for _, ex := range o.Exceptions {
 		if ex.StackTrace != nil {
-			if finalize, ok := ex.StackTrace.(FinalizableOption); ok {
+			if finalize, ok := ex.StackTrace.(FinalizeableOption); ok {
 				finalize.Finalize()
 			}
 		}

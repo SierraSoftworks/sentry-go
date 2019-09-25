@@ -3,30 +3,20 @@ package sentry
 import (
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSDKOption(t *testing.T) {
-	Convey("SDK Option", t, func() {
-		Convey("Should register itself with the default providers", func() {
-			opt := testGetOptionsProvider(&sdkOption{})
-			So(opt, ShouldNotBeNil)
-		})
+	o := testGetOptionsProvider(t, &sdkOption{})
+	assert.NotNil(t, o, "it should be registered as a default option")
+	assert.Implements(t, (*Option)(nil), o, "it should implement the Option interface")
+	assert.Equal(t, "sdk", o.Class(), "it should use the right option class")
 
-		Convey("Should register with the correct name", func() {
-			opt := testGetOptionsProvider(&sdkOption{})
-			So(opt, ShouldNotBeNil)
-
-			oo := opt.(*sdkOption)
-			So(oo.Name, ShouldEqual, "SierraSoftworks/sentry-go")
-		})
-
-		Convey("Should register with the correct version", func() {
-			opt := testGetOptionsProvider(&sdkOption{})
-			So(opt, ShouldNotBeNil)
-
-			oo := opt.(*sdkOption)
-			So(oo.Version, ShouldEqual, version)
-		})
+	t.Run("MarshalJSON()", func(t *testing.T) {
+		assert.Equal(t, map[string]interface{}{
+			"integrations": []interface{}{},
+			"name": "SierraSoftworks/sentry-go",
+			"version": version,
+		}, testOptionsSerialize(t, o), "it should serialize to a string")
 	})
 }

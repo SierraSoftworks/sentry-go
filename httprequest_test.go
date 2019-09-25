@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleHTTPRequest() {
@@ -33,151 +33,95 @@ func ExampleHTTPRequest() {
 }
 
 func TestHTTPRequest(t *testing.T) {
-	Convey("HTTPRequest", t, func() {
-		r, err := http.NewRequest("GET", "https://example.com/test?testing=1&password=test", nil)
-		So(err, ShouldBeNil)
+	r, err := http.NewRequest("GET", "https://example.com/test?testing=1&password=test", nil)
+	assert.Nil(t, err, "should be able to create an HTTP request object")
 
-		r.RemoteAddr = "127.0.0.1:12835"
-		r.Header.Set("Host", "example.com")
-		r.Header.Set("X-Forwarded-Proto", "https")
-		r.Header.Set("Cookie", "testing=1")
-		r.Header.Set("X-Testing", "1")
+	r.RemoteAddr = "127.0.0.1:12835"
+	r.Header.Set("Host", "example.com")
+	r.Header.Set("X-Forwarded-Proto", "https")
+	r.Header.Set("Cookie", "testing=1")
+	r.Header.Set("X-Testing", "1")
 
-		Convey("HTTPRequest()", func() {
-			Convey("Should return an Option", func() {
-				So(HTTPRequest(r), ShouldImplement, (*Option)(nil))
-			})
+	assert.NotNil(t, HTTPRequest(nil), "it should not return nil if no request is provided")
 
-			Convey("Should not return nil if request is nil", func() {
-				So(HTTPRequest(nil), ShouldNotBeNil)
-			})
+	o := HTTPRequest(r)
+	assert.NotNil(t, o, "should not return a nil option")
+	assert.Implements(t, (*Option)(nil), o, "it should implement the Option interface")
+	assert.Equal(t, "request", o.Class(), "it should use the right option class")
+	
+	if assert.Implements(t, (*OmitableOption)(nil), o, "it should implement the OmitableOption interface") {
+		assert.False(t, o.(OmitableOption).Omit(), "it should return false if there is a request")
+		assert.True(t, HTTPRequest(nil).(OmitableOption).Omit(), "it should return true if there is no request")
+	}
+
+	tm := "GET"
+	tu := "https://example.com/test"
+	tq := url.Values{
+		"testing": {"1"},
+		"password": {"********"},
+	}
+	var td interface{} = nil
+	th := map[string]string{}
+	te := map[string]string{}
+	tc := ""
+
+	cases := []struct{
+		Name string
+		Opt Option
+		Setup func()
+	}{
+		{"Default", HTTPRequest(r), func() {}},
+		{"WithCookies()", HTTPRequest(r).WithCookies(), func() {
+			tc = "testing=1"
+		}},
+		{"WithHeaders()", HTTPRequest(r).WithHeaders(), func() {
+			th = map[string]string{
+				"Host":              "example.com",
+				"Cookie":            "testing=1",
+				"X-Testing":         "1",
+				"X-Forwarded-Proto": "https",
+			}
+		}},
+		{"WithEnv()", HTTPRequest(r).WithEnv(), func() {
+			te = map[string]string{
+				"REMOTE_ADDR": "127.0.0.1",
+				"REMOTE_PORT": "12835",
+			}
+		}},
+		{"WithData()", HTTPRequest(r).WithData("testing"), func() {
+			td = "testing"
+		}},
+	}
+	
+	for _, testCase := range cases {
+		testCase := testCase
+		t.Run(testCase.Name, func(t *testing.T) {
+			td = nil
+			th = map[string]string{}
+			te = map[string]string{}
+			tc = ""
+
+			testCase.Setup()
+
+			hr, ok := testCase.Opt.(*httpRequestOption)
+			assert.True(t, ok, "the option should actually be a *httpRequestOption")
+
+			d := hr.buildData()
+			assert.NotNil(t, d, "the built data should not be nil")
+
+			assert.Equal(t, tm, d.Method, "the method should be correct")
+			assert.Equal(t, tu, d.URL, "the url should be correct")
+			assert.Equal(t, tq.Encode(), d.Query, "the query should be correct")
+			assert.Equal(t, td, d.Data, "the data should be correct")
+			assert.Equal(t, th, d.Headers, "the headers should be correct")
+
+			for k, v := range te {
+				if assert.Contains(t, d.Env, k, "the environment should include the %s entry", k) {
+					assert.Equal(t, v, d.Env[k], "the value of the %s environment variable should be correct", k)
+				}
+			}
+
+			assert.Equal(t, tc, d.Cookies, "the cookies should be correct")
 		})
-
-		Convey("Should use the correct Class()", func() {
-			So(HTTPRequest(r).Class(), ShouldEqual, "request")
-		})
-
-		Convey("Omit()", func() {
-			Convey("Should return false with a valid request", func() {
-				So(HTTPRequest(r).(*httpRequestOption).Omit(), ShouldBeFalse)
-			})
-
-			Convey("Should return true if no request was provided", func() {
-				So(HTTPRequest(nil).(*httpRequestOption).Omit(), ShouldBeTrue)
-			})
-		})
-
-		Convey("buildData()", func() {
-			Convey("With the default config", func() {
-				opt := HTTPRequest(r)
-				hr, ok := opt.(*httpRequestOption)
-				So(ok, ShouldBeTrue)
-
-				d := hr.buildData()
-				So(d, ShouldNotBeNil)
-
-				So(d.Method, ShouldEqual, "GET")
-				So(d.URL, ShouldEqual, "https://example.com/test")
-				So(d.Query, ShouldEqual, url.Values{
-					"testing":  {"1"},
-					"password": {"********"},
-				}.Encode())
-
-				So(d.Data, ShouldBeNil)
-				So(d.Headers, ShouldResemble, map[string]string{})
-				So(d.Env, ShouldResemble, map[string]string{})
-				So(d.Cookies, ShouldEqual, "")
-			})
-
-			Convey("With cookies enabled", func() {
-				opt := HTTPRequest(r).WithCookies()
-				hr, ok := opt.(*httpRequestOption)
-				So(ok, ShouldBeTrue)
-
-				d := hr.buildData()
-				So(d, ShouldNotBeNil)
-
-				So(d.Method, ShouldEqual, "GET")
-				So(d.URL, ShouldEqual, "https://example.com/test")
-				So(d.Query, ShouldEqual, url.Values{
-					"testing":  {"1"},
-					"password": {"********"},
-				}.Encode())
-
-				So(d.Data, ShouldBeNil)
-				So(d.Headers, ShouldResemble, map[string]string{})
-				So(d.Env, ShouldResemble, map[string]string{})
-				So(d.Cookies, ShouldEqual, "testing=1")
-			})
-
-			Convey("With headers enabled", func() {
-				opt := HTTPRequest(r).WithHeaders()
-				hr, ok := opt.(*httpRequestOption)
-				So(ok, ShouldBeTrue)
-
-				d := hr.buildData()
-				So(d, ShouldNotBeNil)
-
-				So(d.Method, ShouldEqual, "GET")
-				So(d.URL, ShouldEqual, "https://example.com/test")
-				So(d.Query, ShouldEqual, url.Values{
-					"testing":  {"1"},
-					"password": {"********"},
-				}.Encode())
-
-				So(d.Data, ShouldBeNil)
-				So(d.Headers, ShouldResemble, map[string]string{
-					"Host":              "example.com",
-					"Cookie":            "testing=1",
-					"X-Testing":         "1",
-					"X-Forwarded-Proto": "https",
-				})
-				So(d.Env, ShouldResemble, map[string]string{})
-				So(d.Cookies, ShouldEqual, "")
-			})
-
-			Convey("With env enabled", func() {
-				opt := HTTPRequest(r).WithEnv()
-				hr, ok := opt.(*httpRequestOption)
-				So(ok, ShouldBeTrue)
-
-				d := hr.buildData()
-				So(d, ShouldNotBeNil)
-
-				So(d.Method, ShouldEqual, "GET")
-				So(d.URL, ShouldEqual, "https://example.com/test")
-				So(d.Query, ShouldEqual, url.Values{
-					"testing":  {"1"},
-					"password": {"********"},
-				}.Encode())
-
-				So(d.Data, ShouldBeNil)
-				So(d.Headers, ShouldResemble, map[string]string{})
-				So(d.Env["REMOTE_ADDR"], ShouldEqual, "127.0.0.1")
-				So(d.Env["REMOTE_PORT"], ShouldEqual, "12835")
-				So(d.Cookies, ShouldEqual, "")
-			})
-
-			Convey("With data provided", func() {
-				opt := HTTPRequest(r).WithData("testing")
-				hr, ok := opt.(*httpRequestOption)
-				So(ok, ShouldBeTrue)
-
-				d := hr.buildData()
-				So(d, ShouldNotBeNil)
-
-				So(d.Method, ShouldEqual, "GET")
-				So(d.URL, ShouldEqual, "https://example.com/test")
-				So(d.Query, ShouldEqual, url.Values{
-					"testing":  {"1"},
-					"password": {"********"},
-				}.Encode())
-
-				So(d.Data, ShouldEqual, "testing")
-				So(d.Headers, ShouldResemble, map[string]string{})
-				So(d.Env, ShouldResemble, map[string]string{})
-				So(d.Cookies, ShouldEqual, "")
-			})
-		})
-	})
+	}
 }

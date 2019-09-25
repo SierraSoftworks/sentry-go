@@ -3,7 +3,7 @@ package sentry
 import (
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleDefaultBreadcrumbs() {
@@ -55,234 +55,173 @@ func ExampleBreadcrumbs() {
 }
 
 func TestBreadcrumbs(t *testing.T) {
-	Convey("Breadcrumbs", t, func() {
-		Convey("Should be registered as a default options provider", func() {
-			provider := testGetOptionsProvider(&breadcrumbsList{})
-			So(provider, ShouldNotBeNil)
-		})
+	t.Run("Options Providers", func(t *testing.T) {
+		assert.NotNil(t, testGetOptionsProvider(t, &breadcrumbsList{}), "Breadcrumbs should be registered as a default options provider")
+	})
 
-		Convey("Should expose a DefaultBreadcrumbs() collection", func() {
-			So(DefaultBreadcrumbs(), ShouldNotBeNil)
-			So(DefaultBreadcrumbs(), ShouldImplement, (*BreadcrumbsList)(nil))
-		})
+	t.Run("DefaultBreadcrumbs()", func(t *testing.T) {
+		assert.NotNil(t, DefaultBreadcrumbs())
+		assert.Implements(t, (*BreadcrumbsList)(nil), DefaultBreadcrumbs())
+	})
 
-		Convey("Breadcrumbs()", func() {
-			Convey("Should use the correct Class()", func() {
-				l := NewBreadcrumbsList(3)
-				So(l, ShouldNotBeNil)
+	t.Run("Breadcrumbs()", func(t *testing.T) {
+		assert.Nil(t, Breadcrumbs(nil), "it should return a nil option if it receives a nil breadcrumbs list")
 
-				So(Breadcrumbs(l).Class(), ShouldEqual, "breadcrumbs")
+		l := NewBreadcrumbsList(3)
+		assert.NotNil(t, l, "it should create a breadcrumbs list")
+
+		b := Breadcrumbs(l)
+		assert.NotNil(t, b, "it should return an option when the list is not nil")
+
+		assert.Equal(t, "breadcrumbs", b.Class(), "it should use the correct option class")
+	})
+}
+
+func TestNewBreadcrumbsList(t *testing.T) {
+	l := NewBreadcrumbsList(3)
+	assert.NotNil(t, l, "it should return a non-nil list")
+
+	assert.Implements(t, (*Option)(nil), l, "it should implement the option interface")
+
+	ll, ok := l.(*breadcrumbsList)
+	assert.True(t, ok, "it should actually be a *breadcrumbsList")
+
+	assert.Equal(t, 3, ll.MaxLength, "it should have the right max length")
+	assert.Equal(t, 0, ll.Length, "it should start with no breadcrumbs")
+	assert.Nil(t, ll.Head, "it should have no head to start with")
+	assert.Nil(t, ll.Tail, "it should have no tail to start with")
+
+	t.Run("NewDefault(nil)", func(t *testing.T) {
+		b := l.NewDefault(nil)
+		assert.NotNil(t, b, "it should return a non-nil breadcrumb")
+		assert.Implements(t, (*Breadcrumb)(nil), b, "the breadcrumb should implement the Breadcrumb interface")
+
+		assert.NotNil(t, ll.Tail, "the list's tail should no longer be nil")
+		assert.Equal(t, ll.Tail.Value, b, "the list's tail should now be the new breadcrumb")
+
+		bb, ok := b.(*breadcrumb)
+		assert.True(t, ok, "it should actually be a *breadcrumb object")
+		assert.Equal(t, "", bb.Type, "it should use the default breadcrumb type")
+		assert.Equal(t, map[string]interface{}{}, bb.Data, "it should use the passed breadcrumb data")
+	})
+
+	t.Run("NewDefault(data)", func(t *testing.T) {
+		data := map[string]interface{}{
+			"test": true,
+		}
+
+		b := l.NewDefault(data)
+		assert.NotNil(t, b, "it should return a non-nil breadcrumb")
+		assert.Implements(t, (*Breadcrumb)(nil), b, "the breadcrumb should implement the Breadcrumb interface")
+
+		assert.NotNil(t, ll.Tail, "the list's tail should no longer be nil")
+		assert.Equal(t, ll.Tail.Value, b, "the list's tail should now be the new breadcrumb")
+
+		bb, ok := b.(*breadcrumb)
+		assert.True(t, ok, "it should actually be a *breadcrumb object")
+		assert.Equal(t, "", bb.Type, "it should use the default breadcrumb type")
+		assert.Equal(t, data, bb.Data, "it should use the passed breadcrumb data")
+	})
+
+	t.Run("NewNavigation()", func(t *testing.T) {
+		b := l.NewNavigation("/from", "/to")
+		assert.NotNil(t, b, "it should return a non-nil breadcrumb")
+		assert.Implements(t, (*Breadcrumb)(nil), b, "the breadcrumb should implement the Breadcrumb interface")
+
+		assert.NotNil(t, ll.Tail, "the list's tail should no longer be nil")
+		assert.Equal(t, ll.Tail.Value, b, "the list's tail should now be the new breadcrumb")
+
+		bb, ok := b.(*breadcrumb)
+		assert.True(t, ok, "it should actually be a *breadcrumb object")
+		assert.Equal(t, "navigation", bb.Type, "it should use the default breadcrumb type")
+		assert.Equal(t, map[string]interface{}{
+			"from": "/from",
+			"to":   "/to",
+		}, bb.Data, "it should use the correct breadcrumb data")
+	})
+
+	t.Run("NewHTTPRequest()", func(t *testing.T) {
+		b := l.NewHTTPRequest("GET", "/test", 200, "OK")
+		assert.NotNil(t, b, "it should return a non-nil breadcrumb")
+		assert.Implements(t, (*Breadcrumb)(nil), b, "the breadcrumb should implement the Breadcrumb interface")
+
+		assert.NotNil(t, ll.Tail, "the list's tail should no longer be nil")
+		assert.Equal(t, ll.Tail.Value, b, "the list's tail should now be the new breadcrumb")
+
+		bb, ok := b.(*breadcrumb)
+		assert.True(t, ok, "it should actually be a *breadcrumb object")
+		assert.Equal(t, "http", bb.Type, "it should use the default breadcrumb type")
+		assert.Equal(t, map[string]interface{}{
+			"method":      "GET",
+			"url":         "/test",
+			"status_code": 200,
+			"reason":      "OK",
+		}, bb.Data, "it should use the correct breadcrumb data")
+	})
+
+	t.Run("WithSize()", func(t *testing.T) {
+		cl := l.WithSize(5)
+		assert.Equal(t, l, cl, "it should return the list so that the call is chainable")
+		assert.Equal(t, 5, ll.MaxLength, "it should update the lists's max size")
+
+		var b Breadcrumb
+		for i := 0; i < ll.MaxLength*2; i++ {
+			b = l.NewDefault(map[string]interface{}{
+				"index": i,
 			})
+		}
 
-			Convey("Should return nil if the list is nil", func() {
-				So(Breadcrumbs(nil), ShouldBeNil)
+		assert.Equal(t, ll.MaxLength, ll.Length, "the list should cap out at its max size")
+
+		l.WithSize(1)
+		assert.Equal(t, 1, ll.Length, "the list should be resized to the new max size")
+
+		assert.Equal(t, b, ll.Head.Value, "the head of the list should be the last breadcrumb which was added")
+		assert.Equal(t, b, ll.Tail.Value, "the tail of the list should be the last breadcrumb which was added")
+	})
+
+	t.Run("append()", func(t *testing.T) {
+		l.WithSize(0).WithSize(3)
+
+		var b Breadcrumb
+		for i := 0; i < 10; i++ {
+			b = l.NewDefault(map[string]interface{}{
+				"index": i,
 			})
-		})
+		}
 
-		Convey("NewBreadcrumbsList()", func() {
-			l := NewBreadcrumbsList(3)
-			So(l, ShouldNotBeNil)
+		assert.Equal(t, 3, ll.Length, "it should evict values to ensure that the length remains capped")
+		assert.Equal(t, b, ll.Tail.Value, "it should add new breadcrumbs at the end of the list")
+	})
 
-			ll, ok := l.(*breadcrumbsList)
-			So(ok, ShouldBeTrue)
+	t.Run("list()", func(t *testing.T) {
+		l.WithSize(0).WithSize(3)
+		assert.Equal(t, 0, ll.Length, "should start with an empty breadcrumbs list")
 
-			Convey("Should implement Option interface", func() {
-				So(l, ShouldImplement, (*Option)(nil))
-			})
+		ol := ll.list()
+		assert.NotNil(t, ol, "should not return nil if the list is empty")
+		assert.Len(t, ol, 0, "it should return an empty list")
 
-			Convey("Should initialize correctly", func() {
-				So(ll.MaxLength, ShouldEqual, 3)
-				So(ll.Length, ShouldEqual, 0)
-				So(ll.Head, ShouldBeNil)
-				So(ll.Tail, ShouldBeNil)
-			})
+		for i := 0; i < 10; i++ {
+			l.NewDefault(map[string]interface{}{"index": i})
+		}
+		assert.Equal(t, 3, ll.Length, "should now have three breadcrumbs in the list")
 
-			Convey("NewDefault()", func() {
-				data := map[string]interface{}{
-					"test": true,
-				}
+		ol = ll.list()
+		assert.NotNil(t, ol, "should not return nil if the list is non-empty")
+		assert.Len(t, ol, 3, "should return the maximum number of items if the list is full")
 
-				Convey("Should return a Breadcrumb", func() {
-					b := l.NewDefault(data)
-					So(b, ShouldImplement, (*Breadcrumb)(nil))
-				})
+		for i, item := range ol {
+			assert.IsType(t, &breadcrumb{}, item, "every list item should be a *breadcrumb")
+			assert.Equal(t, i+7, item.(*breadcrumb).Data["index"], "the items should be in the right order")
+		}
+	})
 
-				Convey("Should use a default breadcrumb type", func() {
-					b := l.NewDefault(data)
-					bb, ok := b.(*breadcrumb)
-					So(ok, ShouldBeTrue)
-					So(bb.Type, ShouldEqual, "")
-					So(bb.Data, ShouldEqual, data)
-				})
+	t.Run("MarshalJSON()", func(t *testing.T) {
+		l.WithSize(0).WithSize(5).NewDefault(map[string]interface{}{"test": true})
 
-				Convey("Should allow you to specify nil for default data", func() {
-					b := l.NewDefault(nil)
-					bb, ok := b.(*breadcrumb)
-					So(ok, ShouldBeTrue)
-					So(bb.Data, ShouldResemble, map[string]interface{}{})
-				})
-
-				Convey("Should insert the breadcrumb into the list at its tail", func() {
-					b := l.NewDefault(data)
-					So(ll.Length, ShouldEqual, 1)
-					So(ll.Tail, ShouldNotBeNil)
-					So(ll.Tail.Value, ShouldEqual, b)
-				})
-			})
-
-			Convey("NewNavigation()", func() {
-				Convey("Should return a Breadcrumb", func() {
-					b := l.NewNavigation("/from", "/to")
-					So(b, ShouldImplement, (*Breadcrumb)(nil))
-				})
-
-				Convey("Should use a navigation breadcrumb type", func() {
-					b := l.NewNavigation("/from", "/to")
-					bb, ok := b.(*breadcrumb)
-					So(ok, ShouldBeTrue)
-					So(bb.Type, ShouldEqual, "navigation")
-					So(bb.Data, ShouldResemble, map[string]interface{}{
-						"from": "/from",
-						"to":   "/to",
-					})
-				})
-
-				Convey("Should insert the breadcrumb into the list at its tail", func() {
-					b := l.NewNavigation("/from", "/to")
-					So(ll.Length, ShouldEqual, 1)
-					So(ll.Tail, ShouldNotBeNil)
-					So(ll.Tail.Value, ShouldEqual, b)
-				})
-			})
-
-			Convey("NewHTTPRequest()", func() {
-				Convey("Should return a Breadcrumb", func() {
-					b := l.NewHTTPRequest("GET", "/test", 200, "OK")
-					So(b, ShouldImplement, (*Breadcrumb)(nil))
-				})
-
-				Convey("Should use a navigation breadcrumb type", func() {
-					b := l.NewHTTPRequest("GET", "/test", 200, "OK")
-					bb, ok := b.(*breadcrumb)
-					So(ok, ShouldBeTrue)
-					So(bb.Type, ShouldEqual, "http")
-					So(bb.Data, ShouldResemble, map[string]interface{}{
-						"method":      "GET",
-						"url":         "/test",
-						"status_code": 200,
-						"reason":      "OK",
-					})
-				})
-
-				Convey("Should insert the breadcrumb into the list at its tail", func() {
-					b := l.NewHTTPRequest("GET", "/test", 200, "OK")
-					So(ll.Length, ShouldEqual, 1)
-					So(ll.Tail, ShouldNotBeNil)
-					So(ll.Tail.Value, ShouldEqual, b)
-				})
-			})
-
-			Convey("WithSize()", func() {
-				Convey("Should be chainable", func() {
-					So(l.WithSize(5), ShouldEqual, l)
-				})
-
-				Convey("Should update the max length field", func() {
-					So(ll.MaxLength, ShouldEqual, 3)
-					l.WithSize(5)
-					So(ll.MaxLength, ShouldEqual, 5)
-				})
-
-				Convey("Should remove elements which push the length over the limit", func() {
-					var b Breadcrumb
-					for i := 0; i < 3; i++ {
-						b = l.NewDefault(map[string]interface{}{
-							"index": i,
-						})
-						So(b, ShouldNotBeNil)
-					}
-
-					So(ll.Length, ShouldEqual, 3)
-					l.WithSize(1)
-					So(ll.Length, ShouldEqual, 1)
-					So(ll.Head, ShouldNotBeNil)
-					So(ll.Head.Next, ShouldBeNil)
-					So(ll.Head.Value, ShouldEqual, b)
-
-					So(b, ShouldHaveSameTypeAs, &breadcrumb{})
-					So(b.(*breadcrumb).Data, ShouldResemble, map[string]interface{}{
-						"index": 2,
-					})
-				})
-
-				Convey("Should empty the list if the size is set to 0", func() {
-					var b Breadcrumb
-					for i := 0; i < 3; i++ {
-						b = l.NewDefault(map[string]interface{}{
-							"index": i,
-						})
-						So(b, ShouldNotBeNil)
-					}
-
-					l.WithSize(0).WithSize(3)
-					So(ll.Length, ShouldEqual, 0)
-					So(ll.Head, ShouldBeNil)
-					So(ll.Tail, ShouldBeNil)
-				})
-			})
-
-			Convey("append()", func() {
-				Convey("Should evict older entries when we run over the max length", func() {
-					var b Breadcrumb
-					for i := 0; i < 10; i++ {
-						b = l.NewDefault(map[string]interface{}{
-							"index": i,
-						})
-						So(b, ShouldNotBeNil)
-					}
-
-					So(ll.Length, ShouldEqual, 3)
-
-					So(b, ShouldHaveSameTypeAs, &breadcrumb{})
-					So(b.(*breadcrumb).Data, ShouldResemble, map[string]interface{}{
-						"index": 9,
-					})
-				})
-			})
-
-			Convey("list()", func() {
-				Convey("Should handle an empty list correctly", func() {
-					ol := ll.list()
-					So(ol, ShouldNotBeNil)
-					So(ol, ShouldHaveLength, 0)
-				})
-
-				Convey("Should expose a non-empty list correctly", func() {
-					for i := 0; i < 3; i++ {
-						So(l.NewDefault(map[string]interface{}{
-							"index": i,
-						}), ShouldNotBeNil)
-					}
-
-					ol := ll.list()
-					So(ol, ShouldNotBeNil)
-					So(ol, ShouldHaveLength, 3)
-					for i, item := range ol {
-						So(item, ShouldHaveSameTypeAs, &breadcrumb{})
-						So(item.(*breadcrumb).Data, ShouldContainKey, "index")
-						So(item.(*breadcrumb).Data["index"], ShouldEqual, i)
-					}
-				})
-			})
-		})
-
-		Convey("MarshalJSON", func() {
-			l := NewBreadcrumbsList(5)
-			l.NewDefault(map[string]interface{}{"test": true})
-
-			data := testOptionsSerialize(Breadcrumbs(l))
-			So(data, ShouldNotBeNil)
-			So(data, ShouldHaveSameTypeAs, []interface{}{})
-		})
+		data := testOptionsSerialize(t, Breadcrumbs(l))
+		assert.NotNil(t, data, "should not return a nil result")
+		assert.IsType(t, []interface{}{}, data, "should return a JSON array")
 	})
 }

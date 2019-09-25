@@ -3,7 +3,7 @@ package sentry
 import (
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleMessage() {
@@ -22,37 +22,23 @@ func ExampleMessage() {
 }
 
 func TestMessage(t *testing.T) {
-	Convey("Message", t, func() {
-		Convey("Message()", func() {
-			Convey("Should return an Option", func() {
-				So(Message("test"), ShouldImplement, (*Option)(nil))
-			})
+	o := Message("test")
+	assert.NotNil(t, o, "should not return a nil option")
+	assert.Implements(t, (*Option)(nil), o, "it should implement the Option interface")
+	assert.Equal(t, "sentry.interfaces.Message", o.Class(), "it should use the right option class")
 
-			Convey("With just a message string", func() {
-				m := Message("test")
-				So(m, ShouldNotBeNil)
+	t.Run("MarshalJSON()", func(t *testing.T) {
+		assert.Equal(t, map[string]interface{}{"message":"test"}, testOptionsSerialize(t, o), "it should serialize to an object")
+	})
 
-				mi, ok := m.(*messageOption)
-				So(ok, ShouldBeTrue)
+	t.Run("parameters", func(t *testing.T) {
+		o := Message("this is a %s", "test")
+		assert.NotNil(t, o, "should not return a nil option")
 
-				So(mi.Message, ShouldEqual, "test")
-			})
-
-			Convey("With a formatted message", func() {
-				m := Message("this is a %s", "test")
-				So(m, ShouldNotBeNil)
-
-				mi, ok := m.(*messageOption)
-				So(ok, ShouldBeTrue)
-
-				So(mi.Message, ShouldEqual, "this is a %s")
-				So(mi.Params, ShouldResemble, []interface{}{"test"})
-				So(mi.Formatted, ShouldEqual, "this is a test")
-			})
-		})
-
-		Convey("Should use the correct Class()", func() {
-			So(Message("test").Class(), ShouldEqual, "sentry.interfaces.Message")
-		})
+		mi, ok := o.(*messageOption)
+		assert.True(t, ok, "it should actually be a *messageOption")
+		assert.Equal(t, "this is a %s", mi.Message, "it should use the right message")
+		assert.Equal(t, []interface{}{"test"}, mi.Params, "it should have the correct parameters")
+		assert.Equal(t, "this is a test", mi.Formatted, "it should format the message when requested")
 	})
 }

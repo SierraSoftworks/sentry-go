@@ -3,7 +3,8 @@ package sentry
 import (
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func ExampleModules() {
@@ -12,110 +13,82 @@ func ExampleModules() {
 		// client
 		Modules(map[string]string{
 			"redis": "v1",
-			"mgo": "v2",
+			"mgo":   "v2",
 		}),
 	)
 
 	cl.Capture(
 		// And override or expand on them when sending an event
 		Modules(map[string]string{
-			"redis": "v2",
+			"redis":     "v2",
 			"sentry-go": "v1",
 		}),
 	)
 }
 
 func TestModules(t *testing.T) {
-	Convey("Modules", t, func() {
-		Convey("Modules()", func() {
-			data := map[string]string{
-				"redis": "1.0.0",
-			}
+	assert.Nil(t, Modules(nil), "it should return nil if the data provided is nil")
 
-			Convey("Should return nil if the data is nil", func() {
-				So(Modules(nil), ShouldBeNil)
-			})
+	data := map[string]string{
+		"redis": "1.0.0",
+	}
 
-			Convey("Should return an Option", func() {
-				So(Modules(data), ShouldImplement, (*Option)(nil))
-			})
+	o := Modules(data)
+	require.NotNil(t, o, "it should not return nil if the data is non-nil")
+	assert.Implements(t, (*Option)(nil), o, "it should implement the Option interface")
+	assert.Equal(t, "modules", o.Class(), "it should use the right option class")
 
-			Convey("Should use the correct Class()", func() {
-				So(Modules(data).Class(), ShouldEqual, "modules")
-			})
+	if assert.Implements(t, (*MergeableOption)(nil), o, "it should implement the MergeableOption interface") {
+		t.Run("Merge()", func(t *testing.T) {
+			om := o.(MergeableOption)
 
-			Convey("Should implement Merge()", func() {
-				So(Modules(data), ShouldImplement, (*MergeableOption)(nil))
-			})
-		})
+			assert.Equal(t, o, om.Merge(&testOption{}), "it should replace the old option if it is not recognized")
 
-		Convey("Merge()", func() {
-			data1 := map[string]string{
-				"redis": "1.0.0",
-			}
-			e1 := Modules(data1)
-			So(e1, ShouldNotBeNil)
-
-			e1m, ok := e1.(MergeableOption)
-			So(ok, ShouldBeTrue)
-
-			Convey("Should overwrite if it doesn't recognize the old option", func() {
-				So(e1m.Merge(&testOption{}), ShouldEqual, e1)
-			})
-
-			Convey("Should merge multiple modules entries", func() {
+			t.Run("different entries", func(t *testing.T) {
 				data2 := map[string]string{
 					"pgsql": "5.4.0",
 				}
+				o2 := Modules(data2)
+				require.NotNil(t, o2, "the second module option should not be nil")
 
-				e2 := Modules(data2)
-				So(e2, ShouldNotBeNil)
+				oo := om.Merge(o2)
+				require.NotNil(t, oo, "it should not return nil when it merges")
 
-				em := e1m.Merge(e2)
-				So(em, ShouldNotBeNil)
-				So(em, ShouldNotEqual, e1)
-				So(em, ShouldNotEqual, e2)
+				ooi, ok := oo.(*modulesOption)
+				require.True(t, ok, "it should actually be a *modulesOption")
 
-				emm, ok := em.(*modulesOption)
-				So(ok, ShouldBeTrue)
-				So(emm.moduleVersions, ShouldContainKey, "redis")
-				So(emm.moduleVersions, ShouldContainKey, "pgsql")
+				if assert.Contains(t, ooi.moduleVersions, "redis", "it should contain the first key") {
+					assert.Equal(t, data["redis"], ooi.moduleVersions["redis"], "it should have the right value for the first key")
+				}
+
+				if assert.Contains(t, ooi.moduleVersions, "pgsql", "it should contain the second key") {
+					assert.Equal(t, data2["pgsql"], ooi.moduleVersions["pgsql"], "it should have the right value for the second key")
+				}
 			})
 
-			Convey("Should overwrite old entries with new ones", func() {
+			t.Run("existing entries", func(t *testing.T) {
 				data2 := map[string]string{
 					"redis": "0.8.0",
 				}
-				e2 := Modules(data2)
-				So(e2, ShouldNotBeNil)
+				o2 := Modules(data2)
+				require.NotNil(t, o2, "the second module option should not be nil")
 
-				em := e1m.Merge(e2)
-				So(em, ShouldNotBeNil)
-				So(em, ShouldNotEqual, e1)
-				So(em, ShouldNotEqual, e2)
+				oo := om.Merge(o2)
+				require.NotNil(t, oo, "it should not return nil when it merges")
 
-				emm, ok := em.(*modulesOption)
-				So(ok, ShouldBeTrue)
-				So(emm.moduleVersions, ShouldContainKey, "redis")
-				So(emm.moduleVersions["redis"], ShouldEqual, "1.0.0")
+				ooi, ok := oo.(*modulesOption)
+				require.True(t, ok, "it should actually be a *modulesOption")
+
+				if assert.Contains(t, ooi.moduleVersions, "redis", "it should contain the first key") {
+					assert.Equal(t, data["redis"], ooi.moduleVersions["redis"], "it should have the right value for the first key")
+				}
 			})
 		})
+	}
 
-		Convey("MarshalJSON", func() {
-			Convey("Should marshal the fields correctly", func() {
-				data := map[string]string{
-					"redis": "1.0.0",
-				}
-
-				serialized := testOptionsSerialize(Modules(data))
-				So(serialized, ShouldNotBeNil)
-
-				expected := map[string]interface{}{
-					"redis": "1.0.0",
-				}
-				So(serialized, ShouldHaveSameTypeAs, expected)
-				So(serialized, ShouldResemble, expected)
-			})
-		})
+	t.Run("MarshalJSON()", func(t *testing.T) {
+		assert.Equal(t, map[string]interface{}{
+			"redis": "1.0.0",
+		}, testOptionsSerialize(t, o))
 	})
 }

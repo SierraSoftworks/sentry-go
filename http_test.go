@@ -3,7 +3,7 @@ package sentry
 import (
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleHTTP() {
@@ -45,30 +45,30 @@ func ExampleHTTP() {
 }
 
 func TestHTTP(t *testing.T) {
-	Convey("HTTP", t, func() {
-		r := &HTTPRequestInfo{
-			URL:    "http://example.com/my.url",
-			Method: "GET",
-			Query:  "q=test",
+	r := &HTTPRequestInfo{
+		URL:    "http://example.com/my.url",
+		Method: "GET",
+		Query:  "q=test",
 
-			Cookies: "testing=1",
-		}
+		Cookies: "testing=1",
+	}
 
-		Convey("HTTP()", func() {
-			Convey("Should return an Option", func() {
-				So(HTTP(r), ShouldImplement, (*Option)(nil))
-			})
+	assert.Equal(t, "request", r.Class(), "request info should use the correct option class")
 
-			Convey("Should return nil if the data is nil", func() {
-				So(HTTP(nil), ShouldBeNil)
-			})
-		})
+	assert.Nil(t, HTTP(nil), "it should return nil if it receives a nil request")
 
-		Convey("HTTPRequestInfo", func() {
-			Convey("Should use the correct Class()", func() {
-				So(r.Class(), ShouldEqual, "request")
-				So(HTTP(r).Class(), ShouldEqual, "request")
-			})
-		})
+	o := HTTP(r)
+	assert.NotNil(t, o, "it should not return a nil option")
+	assert.Implements(t, (*Option)(nil), o, "it should implement the Option interface")
+
+	assert.Equal(t, "request", o.Class(), "it should use the correct option class")
+
+	t.Run("MarshalJSON()", func(t *testing.T) {
+		assert.Equal(t, map[string]interface{}{
+			"url": "http://example.com/my.url",
+			"method": "GET",
+			"query_string": "q=test",
+			"cookies": "testing=1",
+		}, testOptionsSerialize(t, o), "it should serialize the request info correctly")
 	})
 }
