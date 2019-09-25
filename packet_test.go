@@ -58,12 +58,12 @@ func TestPacket(t *testing.T) {
 			p.SetOptions(&testOmitableOption{
 				omit: true,
 			})
-			assert.NotEqual(t, &testOmitableOption{ omit: true }, (*pp)["test"], "it should omit changes if Omit() returns true")
+			assert.NotEqual(t, &testOmitableOption{omit: true}, (*pp)["test"], "it should omit changes if Omit() returns true")
 
 			p.SetOptions(&testOmitableOption{
 				omit: false,
 			})
-			assert.Equal(t, &testOmitableOption{ omit: false }, (*pp)["test"], "it should not omit changes if Omit() returns false")
+			assert.Equal(t, &testOmitableOption{omit: false}, (*pp)["test"], "it should not omit changes if Omit() returns false")
 		})
 
 		t.Run("Finalize()", func(t *testing.T) {
@@ -104,6 +104,9 @@ func TestPacket(t *testing.T) {
 	t.Run("Clone()", func(t *testing.T) {
 		assert.False(t, p == p.Clone(), "it should clone to a new packet")
 		assert.Equal(t, p, p.Clone(), "it should clone to an equivalent packet")
+
+		p := NewPacket().SetOptions(DSN(""), Message("Test"))
+		assert.Equal(t, p, p.Clone(), "the clone should copy any options across")
 	})
 
 	t.Run("MarshalJSON()", func(t *testing.T) {
