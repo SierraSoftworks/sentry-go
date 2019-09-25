@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func ExampleHTTPRequest() {
@@ -157,6 +158,22 @@ func TestHTTPRequest(t *testing.T) {
 	}
 
 	t.Run("MarshalJSON()", func(t *testing.T) {
+		o := HTTPRequest(r).WithHeaders().WithCookies().WithData("test").Sanitize("key", "secret")
 
+		require.NotNil(t, o, "the option should not be nil")
+		assert.Equal(t, map[string]interface{}{
+			"cookies": "testing=1",
+			"data":    "test",
+			"headers": map[string]interface{}{
+				"Cookie":            "testing=1",
+				"Host":              "example.com",
+				"X-Api-Key":         "********",
+				"X-Forwarded-Proto": "https",
+				"X-Testing":         "1",
+			},
+			"method":       "GET",
+			"query_string": "password=%2A%2A%2A%2A%2A%2A%2A%2A&testing=1",
+			"url":          "https://example.com/test",
+		}, testOptionsSerialize(t, o), "the request option should be serialized correctly")
 	})
 }
