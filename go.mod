@@ -1,4 +1,4 @@
-module github.com/SierraSoftworks/sentry-go
+module github.com/SierraSoftworks/sentry-go/v2
 
 require (
 	github.com/certifi/gocertifi v0.0.0-20190105021004-abcd57078448
