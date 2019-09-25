@@ -41,6 +41,7 @@ func TestHTTPRequest(t *testing.T) {
 	r.Header.Set("X-Forwarded-Proto", "https")
 	r.Header.Set("Cookie", "testing=1")
 	r.Header.Set("X-Testing", "1")
+	r.Header.Set("X-API-Key", "secret")
 
 	assert.NotNil(t, HTTPRequest(nil), "it should not return nil if no request is provided")
 
@@ -48,7 +49,7 @@ func TestHTTPRequest(t *testing.T) {
 	assert.NotNil(t, o, "should not return a nil option")
 	assert.Implements(t, (*Option)(nil), o, "it should implement the Option interface")
 	assert.Equal(t, "request", o.Class(), "it should use the right option class")
-	
+
 	if assert.Implements(t, (*OmitableOption)(nil), o, "it should implement the OmitableOption interface") {
 		assert.False(t, o.(OmitableOption).Omit(), "it should return false if there is a request")
 		assert.True(t, HTTPRequest(nil).(OmitableOption).Omit(), "it should return true if there is no request")
@@ -57,20 +58,26 @@ func TestHTTPRequest(t *testing.T) {
 	tm := "GET"
 	tu := "https://example.com/test"
 	tq := url.Values{
-		"testing": {"1"},
-		"password": {"********"},
+		"testing":  {"1"},
+		"password": {sanitizationString},
 	}
 	var td interface{} = nil
 	th := map[string]string{}
 	te := map[string]string{}
 	tc := ""
 
-	cases := []struct{
-		Name string
-		Opt Option
+	cases := []struct {
+		Name  string
+		Opt   Option
 		Setup func()
 	}{
 		{"Default", HTTPRequest(r), func() {}},
+		{"Default.Sanitize()", HTTPRequest(r).Sanitize("testing"), func() {
+			tq = url.Values{
+				"testing":  {sanitizationString},
+				"password": {sanitizationString},
+			}
+		}},
 		{"WithCookies()", HTTPRequest(r).WithCookies(), func() {
 			tc = "testing=1"
 		}},
@@ -80,6 +87,16 @@ func TestHTTPRequest(t *testing.T) {
 				"Cookie":            "testing=1",
 				"X-Testing":         "1",
 				"X-Forwarded-Proto": "https",
+				"X-Api-Key":         "secret",
+			}
+		}},
+		{"WithHeaders().Sanitize()", HTTPRequest(r).WithHeaders().Sanitize("key"), func() {
+			th = map[string]string{
+				"Host":              "example.com",
+				"Cookie":            "testing=1",
+				"X-Testing":         "1",
+				"X-Forwarded-Proto": "https",
+				"X-Api-Key":         sanitizationString,
 			}
 		}},
 		{"WithEnv()", HTTPRequest(r).WithEnv(), func() {
@@ -92,10 +109,14 @@ func TestHTTPRequest(t *testing.T) {
 			td = "testing"
 		}},
 	}
-	
+
 	for _, testCase := range cases {
 		testCase := testCase
 		t.Run(testCase.Name, func(t *testing.T) {
+			tq = url.Values{
+				"testing":  {"1"},
+				"password": {sanitizationString},
+			}
 			td = nil
 			th = map[string]string{}
 			te = map[string]string{}
@@ -124,4 +145,8 @@ func TestHTTPRequest(t *testing.T) {
 			assert.Equal(t, tc, d.Cookies, "the cookies should be correct")
 		})
 	}
+
+	t.Run("MarshalJSON()", func(t *testing.T) {
+
+	})
 }
