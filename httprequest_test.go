@@ -3,6 +3,7 @@ package sentry
 import (
 	"net/http"
 	"net/url"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -103,6 +104,15 @@ func TestHTTPRequest(t *testing.T) {
 			te = map[string]string{
 				"REMOTE_ADDR": "127.0.0.1",
 				"REMOTE_PORT": "12835",
+			}
+		}},
+		{"WithEnv().Sanitize()", HTTPRequest(r).WithEnv().Sanitize("secret"), func() {
+			os.Setenv("SECRET", "secret")
+
+			te = map[string]string{
+				"REMOTE_ADDR": "127.0.0.1",
+				"REMOTE_PORT": "12835",
+				"SECRET":      "********",
 			}
 		}},
 		{"WithData()", HTTPRequest(r).WithData("testing"), func() {
