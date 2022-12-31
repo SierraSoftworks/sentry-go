@@ -51,10 +51,10 @@ func TestStackTraceGenerator(t *testing.T) {
 		assert.Equal(t, file, frame.AbsoluteFilename, "the filename for the frame should match the caller")
 		assert.Equal(t, line, frame.Line, "the line from the frame should match the caller")
 
-		assert.Equal(t, "github.com/SierraSoftworks/sentry-go/stacktraceGen_test.go", frame.Filename, "it should have the correct filename")
+		assert.Regexp(t, ".*/sentry-go/stacktraceGen_test.go$", frame.Filename, "it should have the correct filename")
 		assert.Equal(t, "TestStackTraceGenerator.func3", frame.Function, "it should have the correct function name")
-		assert.Equal(t, "sentry-go", frame.Module, "it should have the correct module name")
-		assert.Equal(t, "github.com/SierraSoftworks/sentry-go", frame.Package, "it should have the correct package name")
+		assert.Equal(t, "sentry-go/v2", frame.Module, "it should have the correct module name")
+		assert.Equal(t, "github.com/SierraSoftworks/sentry-go/v2", frame.Package, "it should have the correct package name")
 	})
 
 	t.Run("stackTraceFrame.ClassifyInternal()", func(t *testing.T) {
@@ -80,7 +80,9 @@ func TestStackTraceGenerator(t *testing.T) {
 			FunctionName string
 		}{
 			{"Full Name", "github.com/SierraSoftworks/sentry-go.Context", "github.com/SierraSoftworks/sentry-go", "sentry-go", "Context"},
+			{"Full Name (v2)", "github.com/SierraSoftworks/sentry-go/v2.Context", "github.com/SierraSoftworks/sentry-go/v2", "sentry-go/v2", "Context"},
 			{"Struct Function Name", "github.com/SierraSoftworks/sentry-go.packet.Clone", "github.com/SierraSoftworks/sentry-go", "sentry-go", "packet.Clone"},
+			{"Struct Function Name (v2)", "github.com/SierraSoftworks/sentry-go/v2.packet.Clone", "github.com/SierraSoftworks/sentry-go/v2", "sentry-go/v2", "packet.Clone"},
 			{"No Package", "sentry-go.Context", "sentry-go", "sentry-go", "Context"},
 		}
 

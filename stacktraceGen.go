@@ -87,25 +87,31 @@ func (f *stackTraceFrame) ClassifyInternal(internalPrefixes []string) {
 	}
 }
 
+// formatFuncName converts a stack frame function name, which is commonly of the form
+// 'github.com/SierraSoftworks/sentry-go/v2.TestStackTraceGenerator.func3', into a well-formed
+// package, module, and function name.
+// For the above example, this will result in the following values being emitted:
+//   - Package: github.com/SierraSoftworks/sentry-go/v2
+//   - Module: SierraSoftworks/sentry-go/v2
+//   - Function: TestStackTraceGenerator.func3
 func formatFuncName(fnName string) (pack, module, name string) {
 	name = fnName
 	pack = ""
 	module = ""
 
-	if idx := strings.LastIndex(name, "/"); idx != -1 {
-		n := name[idx+1:]
-		if idx2 := strings.Index(n, "."); idx2 != -1 {
-			pack = name[:idx+idx2+1]
-			module = n[0:idx2]
-			name = n[idx2+1:]
-		}
-	} else if idx := strings.Index(name, "."); idx != -1 {
-		pack = name[0:idx]
-		module = pack
-		name = name[idx+1:]
-	}
-
 	name = strings.Replace(name, "·", ".", -1)
+
+	packageParts := strings.Split(name, "/")
+	codeParts := strings.Split(packageParts[len(packageParts)-1], ".")
+
+	pack = strings.Join(append(packageParts[:len(packageParts)-1], codeParts[0]), "/")
+	name = strings.Join(codeParts[1:], ".")
+
+	if len(packageParts) > 2 {
+		module = strings.Join(append(packageParts[2:len(packageParts)-1], codeParts[0]), "/")
+	} else {
+		module = codeParts[0]
+	}
 
 	return
 }
