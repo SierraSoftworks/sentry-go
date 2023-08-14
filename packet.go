@@ -1,7 +1,7 @@
 package sentry
 
 // A Packet is a JSON serializable object that will be sent to
-// the Sentry server to describe an event. It provides convinience
+// the Sentry server to describe an event. It provides convenience
 // methods for setting options and handling the various types of
 // option that can be added.
 type Packet interface {
