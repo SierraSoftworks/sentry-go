@@ -4,7 +4,7 @@ require (
 	github.com/certifi/gocertifi v0.0.0-20190105021004-abcd57078448
 	github.com/matishsiao/goInfo v0.0.0-20170803142006-617e6440957e
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 )
 
 go 1.13
